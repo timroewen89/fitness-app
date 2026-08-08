@@ -1,8 +1,9 @@
-const CACHE_NAME = "momentum-v2.9.0";
+const CACHE_NAME = "momentum-v2.9.1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./vendor/lucide.min.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -53,7 +54,7 @@ self.addEventListener("fetch", event => {
           .then(cache => cache.put(event.request, copy))
           .catch(() => undefined)
           .then(() => response);
-      });
+      }).catch(() => Response.error());
     })
   );
 });

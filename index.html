@@ -2,15 +2,18 @@
 <html lang="nl" data-visualize-standalone>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#167a58">
+<meta name="theme-color" content="#167a58" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f3d2c" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Persoonlijke fitness-, voedings- en herstelcoach met kniebewuste trainingsopbouw.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Momentum">
 <link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <title>Momentum Fitness Tracker</title>
 <style>:root {
@@ -830,6 +833,20 @@ svg {
 <body>
 <div id="fitJourneyApp" class="fitness-app">
   <style>
+    /* Contrast-correcties (WCAG AA) op de boilerplate-variabelen. */
+    :root {
+      --muted-foreground: light-dark(rgb(26 28 31 / 66%), rgb(255 255 255 / 68%));
+      --primary: light-dark(rgb(10 90 194), rgb(131 195 255));
+      --green: light-dark(rgb(0 122 48), rgb(64 201 119));
+      --destructive: light-dark(rgb(180 65 5), rgb(255 133 73));
+    }
+    /* Dubbele paginapadding opheffen: .app-shell verzorgt de randruimte. */
+    :root:not([data-app-block-surface]) > body { padding: 0; }
+    /* Zichtbare focus voor de "Back-up importeren"-label-knop (sr-only file-input ernaast). */
+    #fitJourneyApp label.btn:has(+ input.sr-only:focus-visible) {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
     #fitJourneyApp {
       --fit-gap: 1rem;
       color: var(--foreground);
@@ -839,6 +856,10 @@ svg {
       max-width: 1080px;
       margin: 0 auto;
       padding: 1rem;
+      padding-top: max(1rem, env(safe-area-inset-top, 0px));
+      padding-right: max(1rem, env(safe-area-inset-right, 0px));
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+      padding-left: max(1rem, env(safe-area-inset-left, 0px));
     }
     #fitJourneyApp .app-header {
       display: flex;
@@ -883,6 +904,19 @@ svg {
       overscroll-behavior-inline: contain;
       scroll-snap-type: x proximity;
       scrollbar-width: thin;
+    }
+    /* Fade aan de rand als hint dat er meer tabs buiten beeld staan (iOS toont geen scrollbar). */
+    #fitJourneyApp .nav-row.has-overflow-end {
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+      mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+    }
+    #fitJourneyApp .nav-row.has-overflow-start {
+      -webkit-mask-image: linear-gradient(to left, black calc(100% - 28px), transparent);
+      mask-image: linear-gradient(to left, black calc(100% - 28px), transparent);
+    }
+    #fitJourneyApp .nav-row.has-overflow-start.has-overflow-end {
+      -webkit-mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent);
+      mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent);
     }
     #fitJourneyApp .nav-row .btn {
       flex: 0 0 auto;
@@ -1184,7 +1218,7 @@ svg {
       margin: 1rem 0;
     }
     #fitJourneyApp .status-panel[data-status="green"] { border-color: var(--green); }
-    #fitJourneyApp .status-panel[data-status="orange"] { border-color: var(--viz-series-3); }
+    #fitJourneyApp .status-panel[data-status="orange"] { border-color: var(--viz-series-2); }
     #fitJourneyApp .status-panel[data-status="red"] { border-color: var(--destructive); }
     #fitJourneyApp .status-panel strong { display: block; }
     #fitJourneyApp .coach-summary {
@@ -1286,6 +1320,7 @@ svg {
         z-index: 30;
         margin: 1rem -.75rem -.75rem;
         padding: .75rem;
+        padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
         border-top: 1px solid var(--border);
         background: var(--popover);
       }
@@ -1318,8 +1353,25 @@ svg {
       #fitJourneyApp .training-history-table td[colspan]::before { content: none; }
       #fitJourneyApp .training-history-table .card-actions { margin-top: -.25rem; }
     }
+    /* Op touch-apparaten (ook > 760px, bv. iPad): geen iOS-autozoom en volwaardige tap targets. */
+    @media (pointer: coarse) {
+      #fitJourneyApp :is(.form-control, .form-select) { font-size: 16px; }
+      #fitJourneyApp :is(.btn, .form-control, .form-select) { min-height: 44px; }
+      #fitJourneyApp :is(.form-check, .meal-check, .shopping-check) { min-height: 44px; }
+      #fitJourneyApp .form-check-input {
+        width: 24px;
+        height: 24px;
+        min-height: 24px;
+      }
+    }
     @media (max-width: 540px) {
-      #fitJourneyApp .app-shell { padding: .75rem; }
+      #fitJourneyApp .app-shell {
+        padding: .75rem;
+        padding-top: max(.75rem, env(safe-area-inset-top, 0px));
+        padding-right: max(.75rem, env(safe-area-inset-right, 0px));
+        padding-bottom: calc(.75rem + env(safe-area-inset-bottom, 0px));
+        padding-left: max(.75rem, env(safe-area-inset-left, 0px));
+      }
       #fitJourneyApp .stats-grid { grid-template-columns: 1fr; }
       #fitJourneyApp .form-grid { grid-template-columns: 1fr; }
       #fitJourneyApp .session-log-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1357,14 +1409,14 @@ svg {
     </header>
 
     <div class="nav-shell">
-      <nav class="nav-row" role="tablist" aria-label="Apponderdelen">
-        <button class="btn" type="button" role="tab" aria-selected="true" data-nav="dashboard"><i data-lucide="layout-dashboard" aria-hidden="true"></i>Vandaag</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="training"><i data-lucide="dumbbell" aria-hidden="true"></i>Training</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="nutrition"><i data-lucide="utensils" aria-hidden="true"></i>Voeding</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="knee"><i data-lucide="shield-check" aria-hidden="true"></i>Kniecheck</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="weekly"><i data-lucide="clipboard-check" aria-hidden="true"></i>Weekcheck</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="progress"><i data-lucide="trending-up" aria-hidden="true"></i>Voortgang</button>
-        <button class="btn" type="button" role="tab" aria-selected="false" data-nav="settings"><i data-lucide="settings" aria-hidden="true"></i>Profiel</button>
+      <nav class="nav-row" aria-label="Apponderdelen">
+        <button class="btn" type="button" aria-pressed="true" data-nav="dashboard"><i data-lucide="layout-dashboard" aria-hidden="true"></i>Vandaag</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="training"><i data-lucide="dumbbell" aria-hidden="true"></i>Training</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="nutrition"><i data-lucide="utensils" aria-hidden="true"></i>Voeding</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="knee"><i data-lucide="shield-check" aria-hidden="true"></i>Kniecheck</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="weekly"><i data-lucide="clipboard-check" aria-hidden="true"></i>Weekcheck</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="progress"><i data-lucide="trending-up" aria-hidden="true"></i>Voortgang</button>
+        <button class="btn" type="button" aria-pressed="false" data-nav="settings"><i data-lucide="settings" aria-hidden="true"></i>Profiel</button>
       </nav>
     </div>
 
@@ -1447,9 +1499,9 @@ svg {
       <section class="view" data-view="nutrition" hidden>
         <div class="section-head">
           <div><h2>Voedingsweek</h2><p>Praktisch weekschema voor geleidelijk afvallen bij drie trainingen per week.</p></div>
-          <div class="viz-controls" role="tablist" aria-label="Voedingsopties">
-            <button class="btn" type="button" role="tab" aria-selected="true" data-nutrition-mode="meals">Maaltijden</button>
-            <button class="btn" type="button" role="tab" aria-selected="false" data-nutrition-mode="shopping">Boodschappenlijst</button>
+          <div class="viz-controls" role="group" aria-label="Voedingsopties">
+            <button class="btn" type="button" aria-pressed="true" data-nutrition-mode="meals">Maaltijden</button>
+            <button class="btn" type="button" aria-pressed="false" data-nutrition-mode="shopping">Boodschappenlijst</button>
           </div>
         </div>
         <div id="mealMode">
@@ -1462,7 +1514,7 @@ svg {
             </div>
             <p class="callout text-small">Gewichten zijn onbereid, behalve waar “uitgelekt” staat; rijst, pasta en couscous worden droog gewogen. Calorieën blijven praktische schattingen.</p>
           </div>
-          <div class="day-tabs" id="mealDayTabs" role="tablist" aria-label="Dagen van het voedingsschema"></div>
+          <div class="day-tabs" id="mealDayTabs" role="group" aria-label="Dagen van het voedingsschema"></div>
           <div class="content-grid">
             <article class="card" id="mealPlanCard"></article>
             <aside class="card" id="nutritionSummary"></aside>
@@ -1931,6 +1983,7 @@ svg {
       }
 
       function safeNumber(value, fallback) {
+        if (value == null || (typeof value === "string" && value.trim() === "")) return fallback;
         var parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : fallback;
       }
@@ -1959,11 +2012,61 @@ svg {
         saveState();
       }
 
-      function loadState() {
-        try {
-          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-          if (!saved || typeof saved !== "object") return JSON.parse(JSON.stringify(defaultState));
-          var merged = Object.assign({}, defaultState, saved);
+      /* Debounce voor hoogfrequente invoer (typen, slider slepen): niet per toetsaanslag
+         de volledige state serialiseren. */
+      var persistSessionTimer = null;
+      function persistActiveSessionSoon() {
+        clearTimeout(persistSessionTimer);
+        persistSessionTimer = setTimeout(persistActiveSession, 400);
+      }
+
+      function isIsoDay(value) {
+        return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+      }
+
+      /* Dieptevalidatie: dwingt types af zodat een (geimporteerde) back-up nooit
+         HTML kan injecteren of de app kan laten crashen op ontbrekende velden. */
+      function sanitizeState(merged) {
+        var profileDefaults = defaultState.profile;
+        merged.profile.age = safeNumber(merged.profile.age, profileDefaults.age);
+        merged.profile.height = safeNumber(merged.profile.height, profileDefaults.height);
+        merged.profile.startWeight = safeNumber(merged.profile.startWeight, profileDefaults.startWeight);
+        merged.profile.calories = safeNumber(merged.profile.calories, profileDefaults.calories);
+        merged.profile.protein = safeNumber(merged.profile.protein, profileDefaults.protein);
+        if (!isIsoDay(merged.profile.startDate)) merged.profile.startDate = todayIso;
+        merged.weights = merged.weights.filter(function (entry) {
+          return entry && typeof entry === "object" && isIsoDay(entry.date) && Number.isFinite(Number(entry.value));
+        }).map(function (entry) { return { date: entry.date, value: Number(entry.value) }; });
+        if (!merged.weights.length) merged.weights = defaultState.weights.slice();
+        merged.weeklyCheckins = merged.weeklyCheckins.filter(function (entry) {
+          return entry && typeof entry === "object" && isIsoDay(entry.day);
+        }).map(function (entry) {
+          return Object.assign({}, entry, {
+            weight: safeNumber(entry.weight, profileDefaults.startWeight),
+            energy: safeNumber(entry.energy, 6),
+            sleep: safeNumber(entry.sleep, 6),
+            knee: safeNumber(entry.knee, 1),
+            swelling: entry.swelling === true,
+            instability: entry.instability === true
+          });
+        });
+        merged.workoutHistory = merged.workoutHistory.filter(function (entry) {
+          return entry && typeof entry === "object" && typeof entry.date === "string" && isIsoDay(entry.day);
+        });
+        merged.kneeChecks = merged.kneeChecks.filter(function (entry) {
+          return entry && typeof entry === "object" && typeof entry.date === "string";
+        });
+        merged.customFoodLogs = merged.customFoodLogs.filter(function (entry) {
+          return entry && typeof entry === "object";
+        });
+        merged.selectedMealDay = Math.min(6, Math.max(0, Math.round(safeNumber(merged.selectedMealDay, 0))));
+        merged.selectedWeek = Math.min(12, Math.max(1, Math.round(safeNumber(merged.selectedWeek, 1))));
+        merged.selectedNutritionMode = merged.selectedNutritionMode === "shopping" ? "shopping" : "meals";
+        return merged;
+      }
+
+      function mergeSavedState(saved) {
+        var merged = Object.assign({}, defaultState, saved);
           merged.profile = Object.assign({}, defaultState.profile, saved.profile || {});
           merged.completions = saved.completions || {};
           merged.mealLogs = saved.mealLogs || {};
@@ -1977,19 +2080,34 @@ svg {
           merged.weights = Array.isArray(saved.weights) && saved.weights.length ? saved.weights : defaultState.weights.slice();
           merged.nutritionSettings = Object.assign({}, defaultState.nutritionSettings, saved.nutritionSettings || {});
           merged.trainingSchedule = trainingSchedules[saved.trainingSchedule] ? saved.trainingSchedule : defaultState.trainingSchedule;
-          merged.pendingCalories = saved.pendingCalories && typeof saved.pendingCalories === "object" ? saved.pendingCalories : null;
-          merged.activeSession = saved.activeSession && typeof saved.activeSession === "object" ? saved.activeSession : null;
-          return merged;
+        merged.pendingCalories = saved.pendingCalories && typeof saved.pendingCalories === "object" ? saved.pendingCalories : null;
+        merged.activeSession = saved.activeSession && typeof saved.activeSession === "object" ? saved.activeSession : null;
+        return sanitizeState(merged);
+      }
+
+      function loadState() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (!saved || typeof saved !== "object") return JSON.parse(JSON.stringify(defaultState));
+          return mergeSavedState(saved);
         } catch (error) {
           return JSON.parse(JSON.stringify(defaultState));
         }
       }
 
+      var storageWarningShown = false;
+
       function saveState() {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          storageWarningShown = false;
           return true;
         } catch (error) {
+          /* Nooit stil laten mislukken: de gebruiker denkt anders dat alles bewaard is. */
+          if (!storageWarningShown) {
+            storageWarningShown = true;
+            window.alert("Opslaan is niet gelukt: de browseropslag is vol of geblokkeerd. Recente wijzigingen kunnen verloren gaan. Download een back-up via Profiel zodra opslaan weer lukt.");
+          }
           return false;
         }
       }
@@ -2015,25 +2133,23 @@ svg {
         return plan;
       }
 
-      function currentProgramWeek() {
-        var start = new Date(state.profile.startDate + "T12:00:00");
-        var now = new Date();
-        var diff = Math.floor((now - start) / 604800000) + 1;
-        var elapsedWeek = Math.max(1, diff);
-        return (elapsedWeek - 1) % 12 + 1;
-      }
-
-      function currentProgramCycle() {
-        var start = new Date(state.profile.startDate + "T12:00:00");
-        var diff = Math.floor((new Date() - start) / 604800000) + 1;
-        return Math.floor((Math.max(1, diff) - 1) / 12) + 1;
-      }
-
+      /* Week en cyclus worden op dag-niveau berekend (wissel om middernacht, niet om 12:00)
+         en overal via dezelfde functie, zodat dashboard en handmatige sessies nooit
+         een andere week zien op de overgangsdag. Math.round vangt DST-uurverschuiving af. */
       function programPositionForDay(day) {
         var start = new Date(state.profile.startDate + "T12:00:00");
         var target = new Date((day || currentTodayIso()) + "T12:00:00");
-        var elapsedWeek = Math.max(1, Math.floor((target - start) / 604800000) + 1);
+        var days = Math.round((target - start) / 86400000);
+        var elapsedWeek = Math.max(1, Math.floor(days / 7) + 1);
         return { week: (elapsedWeek - 1) % 12 + 1, cycle: Math.floor((elapsedWeek - 1) / 12) + 1 };
+      }
+
+      function currentProgramWeek() {
+        return programPositionForDay(currentTodayIso()).week;
+      }
+
+      function currentProgramCycle() {
+        return programPositionForDay(currentTodayIso()).cycle;
       }
 
       function manualSessionsForCurrentWeek() {
@@ -2067,6 +2183,48 @@ svg {
       function refreshIcons() {
         if (window.lucide && typeof window.lucide.createIcons === "function") {
           window.lucide.createIcons({ attrs: { width: 16, height: 16 } });
+        }
+      }
+
+      /* Behoud focus en open <details>-elementen over volledige innerHTML-rebuilds heen,
+         zodat toetsenbord- en VoiceOver-gebruikers hun positie niet verliezen bij elk vinkje. */
+      var UI_STATE_ATTRS = ["data-meal-check", "data-shopping-check", "data-meal-day", "data-nutrition-mode", "data-session-check", "data-session-log", "data-session-alternative", "data-start-workout", "data-edit-food", "data-delete-food"];
+
+      function uiFocusKeyFor(element) {
+        if (!element || element === document.body) return null;
+        if (element.id) return "#" + (window.CSS && CSS.escape ? CSS.escape(element.id) : element.id);
+        for (var i = 0; i < UI_STATE_ATTRS.length; i++) {
+          var value = element.getAttribute(UI_STATE_ATTRS[i]);
+          if (value !== null) return "[" + UI_STATE_ATTRS[i] + "=\"" + value.replace(/"/g, '\\"') + "\"]";
+        }
+        return null;
+      }
+
+      function detailsStateKey(detail) {
+        var summary = detail.querySelector("summary");
+        var container = detail.closest("article, section");
+        var heading = container ? container.querySelector("h3, h2") : null;
+        return (heading ? heading.textContent + "::" : "") + (summary ? summary.textContent : "");
+      }
+
+      function preserveUiState(render) {
+        var active = document.activeElement;
+        var focusKey = active && root.contains(active) ? uiFocusKeyFor(active) : null;
+        var openKeys = [];
+        root.querySelectorAll("details[open]").forEach(function (detail) {
+          var key = detailsStateKey(detail);
+          if (key) openKeys.push(key);
+        });
+        render();
+        if (openKeys.length) {
+          root.querySelectorAll("details").forEach(function (detail) {
+            if (openKeys.indexOf(detailsStateKey(detail)) !== -1) detail.open = true;
+          });
+        }
+        if (focusKey) {
+          var next = null;
+          try { next = root.querySelector(focusKey); } catch (error) { next = null; }
+          if (next && typeof next.focus === "function") next.focus({ preventScroll: true });
         }
       }
 
@@ -2170,13 +2328,16 @@ svg {
         if (energyScale === 1 && proteinScale === 1) return description;
         var energyTerms = /havermout|muesli|boterham|wrap|pasta|rijst|aardappel|couscous|noten|pindakaas|olijfolie|pompoenpit|kokosmelk/;
         var proteinTerms = /kwark|skyr|yoghurt|melk|hüttenkäse|tofu|tempeh|kip|zalm|biefstuk|vegetarische stukjes|edamame|sojagehakt|kidneybonen|linzen|kikkererwten|hummus|kaas/;
-        return String(description).replace(/(\d+(?:[.,]\d+)?)\s*(g|ml|boterhammen|wraps|crackers|eieren|stuks)/gi, function (match, numberText, unit, offset, fullText) {
-          var context = fullText.slice(offset + match.length, offset + match.length + 28).toLowerCase();
-          var scale = unit.toLowerCase() === "eieren" || proteinTerms.test(context) ? proteinScale : (energyTerms.test(context) ? energyScale : 1);
+        /* Staat één bijvoeglijk naamwoord tussen getal en eenheid toe ("4 volkoren boterhammen"),
+           en telt de eenheid zelf mee in de context, zodat stuk-items net als de kcal meeschalen. */
+        return String(description).replace(/(\d+(?:[.,]\d+)?)\s*((?:[a-zà-ü-]+\s+)?)(g|ml|boterhammen|wraps|crackers|eieren|stuks)\b/gi, function (match, numberText, middle, unit, offset, fullText) {
+          var context = (middle + unit + " " + fullText.slice(offset + match.length, offset + match.length + 28)).toLowerCase();
+          /* Energie-termen eerst: "pindakaas" bevat anders de eiwitterm "kaas" en schaalt verkeerd. */
+          var scale = unit.toLowerCase() === "eieren" ? proteinScale : (energyTerms.test(context) ? energyScale : (proteinTerms.test(context) ? proteinScale : 1));
           if (scale === 1) return match;
           var value = Number(numberText.replace(",", "."));
           var scaled = /^(g|ml)$/i.test(unit) ? Math.max(5, Math.round(value * scale / 5) * 5) : Math.max(1, Math.round(value * scale));
-          return String(scaled).replace(".", ",") + " " + unit;
+          return String(scaled).replace(".", ",") + " " + middle + unit;
         });
       }
 
@@ -2239,6 +2400,10 @@ svg {
       }
 
       function renderDashboard() {
+        preserveUiState(renderDashboardCore);
+      }
+
+      function renderDashboardCore() {
         var week = currentProgramWeek();
         var cycle = currentProgramCycle();
         var phase = trainingPlanFor(week);
@@ -2249,7 +2414,7 @@ svg {
         var stats = [
           ["Programma", "Cyclus " + cycle + " · week " + week + "/12", phase.label],
           ["Trainingen", coreDone + "/3", manualSessions.length ? manualSessions.length + " handmatig extra" : (completed.length > coreDone ? "+ optionele dag" : "vaste sessies")],
-          ["Gewichtstrend", (delta > 0 ? "+" : "") + delta.toFixed(1) + " kg", delta === 0 ? "eerste meetpunt" : "sinds de start"]
+          ["Gewichtstrend", (delta > 0 ? "+" : "") + delta.toFixed(1) + " kg", state.weights.length < 2 ? "eerste meetpunt" : "sinds de start"]
         ];
         root.querySelector("#dashboardStats").innerHTML = stats.map(function (item) {
           return "<article class=\"card viz-stat\"><span class=\"text-muted\">" + item[0] + "</span><div class=\"viz-stat-value\">" + item[1] + "</div><span class=\"text-small text-muted\">" + item[2] + "</span></article>";
@@ -2263,7 +2428,7 @@ svg {
           "<h2>" + escapeHtml(next.title) + "</h2>" +
           "<p>" + escapeHtml(next.description) + "</p>" +
           "<div class=\"metric-pair text-small\"><span>Weekdoel</span><strong>" + coreDone + " van 3 voltooid</strong></div>" +
-          "<div class=\"progress-track\" aria-label=\"" + progress + "% van het weekdoel voltooid\"><div class=\"progress-fill\" style=\"width:" + progress + "%\"></div></div>" +
+          "<div class=\"progress-track\" role=\"img\" aria-label=\"" + progress + "% van het weekdoel voltooid\"><div class=\"progress-fill\" style=\"width:" + progress + "%\"></div></div>" +
           "<div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" data-start-workout=\"" + next.id + "\" data-week=\"" + week + "\">Start training</button><button class=\"btn\" type=\"button\" data-open-training>Bekijk programma</button></div>";
 
         var totals = nutritionTotals(todayMealDay());
@@ -2515,6 +2680,10 @@ svg {
       }
 
       function renderActiveSession() {
+        preserveUiState(renderActiveSessionCore);
+      }
+
+      function renderActiveSessionCore() {
         var host = root.querySelector("#activeSessionHost");
         if (!activeSession) { host.innerHTML = ""; return; }
         var workout = workouts.find(function (item) { return item.id === activeSession.workoutId; });
@@ -2535,7 +2704,7 @@ svg {
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
           return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div><div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
-        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Rust 60 sec</button><span class=\"rest-clock\" id=\"restClock\" aria-live=\"polite\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div><div class=\"toast\" id=\"sessionToast\" role=\"status\" aria-live=\"polite\"></div></article>";
+        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Rust 60 sec</button><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div><div class=\"toast\" id=\"sessionToast\" role=\"status\" aria-live=\"polite\"></div></article>";
         updateSessionClocks();
       }
 
@@ -2550,15 +2719,22 @@ svg {
         if (rest) rest.textContent = restSeconds > 0 ? "Rust " + restSeconds + "s" : "";
       }
 
+      function announceRest(message) {
+        var toast = root.querySelector("#sessionToast");
+        if (toast) toast.textContent = message;
+      }
+
       function startRest() {
         clearInterval(restTicker);
         restSeconds = 60;
         updateSessionClocks();
+        announceRest("Rustpauze gestart: 60 seconden.");
         restTicker = setInterval(function () {
           restSeconds -= 1;
           if (restSeconds <= 0) {
             restSeconds = 0;
             clearInterval(restTicker);
+            announceRest("Rustpauze voorbij.");
           }
           updateSessionClocks();
         }, 1000);
@@ -2570,7 +2746,8 @@ svg {
           showToast("sessionToast", "Vink minimaal één uitgevoerde oefening af voordat je de training opslaat.", true);
           return;
         }
-        var elapsed = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
+        /* Clamp op 300 min (net als de editor): een dagen open blijven staan sessie mag geen absurde duur loggen. */
+        var elapsed = Math.min(300, Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000)));
         var workout = workouts.find(function (item) { return item.id === activeSession.workoutId; });
         var completedLogs = {};
         activeSession.checked.forEach(function (index) {
@@ -2799,19 +2976,29 @@ svg {
       }
 
       function renderNutrition() {
+        var waterField = root.querySelector("#waterAmount");
+        var waterValue = waterField ? waterField.value : null;
+        preserveUiState(renderNutritionCore);
+        if (waterValue !== null) {
+          waterField = root.querySelector("#waterAmount");
+          if (waterField) waterField.value = waterValue;
+        }
+      }
+
+      function renderNutritionCore() {
         var mode = state.selectedNutritionMode === "shopping" ? "shopping" : "meals";
         var settings = state.nutritionSettings || defaultState.nutritionSettings;
         root.querySelector("#portionScale").value = String(settings.portionScale);
         root.querySelector("#saturdayProtein").value = settings.saturdayProtein;
         root.querySelector("#sundayProtein").value = settings.sundayProtein;
         root.querySelectorAll("[data-nutrition-mode]").forEach(function (button) {
-          button.setAttribute("aria-selected", String(button.dataset.nutritionMode === mode));
+          button.setAttribute("aria-pressed", String(button.dataset.nutritionMode === mode));
         });
         root.querySelector("#mealMode").hidden = mode !== "meals";
         root.querySelector("#shoppingMode").hidden = mode !== "shopping";
         var selected = state.selectedMealDay;
         root.querySelector("#mealDayTabs").innerHTML = dayNames.map(function (day, index) {
-          return "<button class=\"btn\" type=\"button\" role=\"tab\" aria-selected=\"" + (index === selected ? "true" : "false") + "\" data-meal-day=\"" + index + "\">" + day + "</button>";
+          return "<button class=\"btn\" type=\"button\" aria-pressed=\"" + (index === selected ? "true" : "false") + "\" data-meal-day=\"" + index + "\">" + day + "</button>";
         }).join("");
         var key = mealLogKey(selected);
         var eaten = state.mealLogs[key] || [];
@@ -2847,7 +3034,7 @@ svg {
             return "<li class=\"shopping-item\"><label class=\"shopping-check" + (isChecked ? " is-checked" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" data-shopping-check=\"" + escapeHtml(item[0]) + "\"" + (isChecked ? " checked" : "") + "><span class=\"shopping-name\">" + escapeHtml(item[1]) + "</span><strong class=\"item-value text-small\">" + escapeHtml(item[2]) + "</strong></label></li>";
           }).join("") + "</ul></section>";
         }).join("");
-        root.querySelector("#shoppingSummary").innerHTML = "<h3>Voortgang</h3><div class=\"metric-pair\"><span>In de kar</span><strong>" + checked + " van " + total + "</strong></div><div class=\"progress-track\" aria-label=\"" + progress + "% van de boodschappen afgevinkt\"><div class=\"progress-fill\" style=\"width:" + progress + "%\"></div></div><p class=\"text-small text-muted\">De basisweek gebruikt vooral tofu, peulvruchten en sojagehakt, met één kip- en één vismaaltijd. Bij biefstuk blijft de portie 100 g.</p><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"copyShoppingList\">Kopieer lijst</button><button class=\"btn\" type=\"button\" id=\"clearShoppingChecks\">Vinkjes wissen</button></div><div class=\"toast\" id=\"shoppingToast\" role=\"status\"></div>";
+        root.querySelector("#shoppingSummary").innerHTML = "<h3>Voortgang</h3><div class=\"metric-pair\"><span>In de kar</span><strong>" + checked + " van " + total + "</strong></div><div class=\"progress-track\" role=\"img\" aria-label=\"" + progress + "% van de boodschappen afgevinkt\"><div class=\"progress-fill\" style=\"width:" + progress + "%\"></div></div><p class=\"text-small text-muted\">De basisweek gebruikt vooral tofu, peulvruchten en sojagehakt, met één kip- en één vismaaltijd. Bij biefstuk blijft de portie 100 g.</p><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"copyShoppingList\">Kopieer lijst</button><button class=\"btn\" type=\"button\" id=\"clearShoppingChecks\">Vinkjes wissen</button></div><div class=\"toast\" id=\"shoppingToast\" role=\"status\"></div>";
       }
 
       function shoppingListText() {
@@ -2970,6 +3157,7 @@ svg {
           return "<li class=\"history-item\"><div class=\"item-main\"><strong>" + Number(entry.value).toFixed(1) + " kg</strong><span>" + formatDate(entry.date, { day: "numeric", month: "short", year: "numeric" }) + "</span></div><div class=\"card-actions\"><button class=\"btn\" type=\"button\" data-edit-weight=\"" + escapeHtml(entry.date) + "\">Wijzig</button><button class=\"btn btn-danger\" type=\"button\" data-delete-weight=\"" + escapeHtml(entry.date) + "\">Verwijder</button></div></li>";
         }).join("");
         root.querySelector("#weightDate").value = currentTodayIso();
+        root.querySelector("#weightDate").max = currentTodayIso();
         root.querySelector("#weightInput").value = last.value;
       }
 
@@ -3008,6 +3196,10 @@ svg {
         var date = root.querySelector("#weightDate").value;
         var value = safeNumber(root.querySelector("#weightInput").value, 0);
         if (!date || value < 50 || value > 180) return;
+        if (date > currentTodayIso()) {
+          showToast("weightToast", "Een meting kan niet in de toekomst liggen.", true);
+          return;
+        }
         var existing = state.weights.find(function (entry) { return entry.date === date; });
         if (existing) existing.value = value;
         else state.weights.push({ date: date, value: value });
@@ -3181,7 +3373,7 @@ svg {
         var cardio = state.workoutHistory.map(function (record) {
           var minutes = safeNumber(record.cardioMinutes, 0) || Object.keys(record.logs || {}).reduce(function (sum, key) { return sum + safeNumber(record.logs[key].minutes, 0); }, 0);
           return { date: record.day || String(record.date).slice(0, 10), value: minutes };
-        }).filter(function (point) { return point.value > 0; });
+        }).filter(function (point) { return point.value > 0; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
         var knee = state.workoutHistory.map(function (record) { return { date: record.day || String(record.date).slice(0, 10), value: safeNumber(record.kneePain, 0) }; }).concat(state.kneeChecks.map(function (check) {
           return { date: check.day || String(check.date).slice(0, 10), value: Math.max(safeNumber(check.before, 0), safeNumber(check.during, 0), safeNumber(check.after, 0)) };
         })).sort(function (a, b) { return a.date.localeCompare(b.date); });
@@ -3301,6 +3493,7 @@ svg {
       function renderWeeklyCheck() {
         var latestWeight = sortedWeights().slice(-1)[0];
         root.querySelector("#weeklyDate").value = currentTodayIso();
+        root.querySelector("#weeklyDate").max = currentTodayIso();
         root.querySelector("#weeklyWeight").value = Number(latestWeight.value).toFixed(1);
         root.querySelector("#weeklyEnergy").value = 6;
         root.querySelector("#weeklySleep").value = 6;
@@ -3354,6 +3547,10 @@ svg {
       function saveWeeklyCheck(event) {
         event.preventDefault();
         var values = weeklyFormValues();
+        if (values.day > currentTodayIso()) {
+          showToast("weeklyToast", "Een weekcheck kan niet in de toekomst liggen.", true);
+          return;
+        }
         var existingIndex = state.weeklyCheckins.findIndex(function (item) { return item.day === values.day; });
         var existing = existingIndex >= 0 ? state.weeklyCheckins[existingIndex] : null;
         var advice = evaluateWeeklyCheck(values, existing);
@@ -3364,6 +3561,9 @@ svg {
         var isLatestCheck = values.day === latestDay;
         if (isLatestCheck && !existing && advice.suggestedCalories && advice.suggestedCalories !== state.profile.calories) {
           state.pendingCalories = { day: values.day, from: state.profile.calories, to: advice.suggestedCalories };
+        } else if (isLatestCheck) {
+          /* Een nieuwere check zonder voorstel maakt een ouder, nog openstaand voorstel ongeldig. */
+          state.pendingCalories = null;
         }
         if (isLatestCheck) state.coaching = { mode: advice.mode, message: advice.message + " " + advice.calorieMessage, updated: values.day };
         var weightEntry = state.weights.find(function (entry) { return entry.date === values.day; });
@@ -3400,11 +3600,32 @@ svg {
       }
 
       function exportData() {
-        var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        var fileName = "momentum-backup-" + currentTodayIso() + ".json";
+        var json = JSON.stringify(state, null, 2);
+        /* In een iOS-standalone-app is een downloadlink onbetrouwbaar; het deelmenu
+           (Bewaar in Bestanden) is daar de robuuste route. Elders blijft downloaden werken. */
+        if (typeof window.File === "function" && navigator.canShare && navigator.share) {
+          try {
+            var shareFile = new File([json], fileName, { type: "application/json" });
+            if (navigator.canShare({ files: [shareFile] })) {
+              navigator.share({ files: [shareFile], title: "Momentum back-up" })
+                .then(function () { showToast("dataToast", "Back-up gedeeld."); })
+                .catch(function (error) {
+                  if (error && error.name !== "AbortError") downloadBackupFile(json, fileName);
+                });
+              return;
+            }
+          } catch (error) { /* val terug op downloaden */ }
+        }
+        downloadBackupFile(json, fileName);
+      }
+
+      function downloadBackupFile(json, fileName) {
+        var blob = new Blob([json], { type: "application/json" });
         var url = URL.createObjectURL(blob);
         var link = document.createElement("a");
         link.href = url;
-        link.download = "momentum-backup-" + currentTodayIso() + ".json";
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -3416,18 +3637,25 @@ svg {
         if (!file) return;
         var reader = new FileReader();
         reader.onload = function () {
+          /* Bewaar de huidige staat zodat een mislukte import nooit data vernietigt;
+             de nieuwe staat wordt pas gepersisteerd nadat het renderen is geslaagd. */
+          var previousState = state;
+          var previousSession = activeSession;
           try {
             var parsed = JSON.parse(String(reader.result));
-            if (!parsed.profile || !parsed.weights || !parsed.completions) throw new Error("Ongeldig bestand");
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-            state = loadState();
+            if (!parsed || typeof parsed !== "object" || !parsed.profile || typeof parsed.profile !== "object" || !Array.isArray(parsed.weights) || !parsed.completions) throw new Error("Ongeldig bestand");
+            state = mergeSavedState(parsed);
             activeSession = restoreActiveSession(state.activeSession);
             clearInterval(sessionTicker);
             clearInterval(restTicker);
             renderAll();
+            saveState();
             if (activeSession) sessionTicker = setInterval(updateSessionClocks, 1000);
             showToast("dataToast", "Back-up geïmporteerd.");
           } catch (error) {
+            state = previousState;
+            activeSession = previousSession;
+            try { renderAll(); } catch (renderError) { /* vorige staat was al zichtbaar */ }
             showToast("dataToast", "Importeren mislukt: kies een geldige Momentum-back-up.", true);
           }
         };
@@ -3455,8 +3683,22 @@ svg {
       }
 
       function showView(name) {
-        root.querySelectorAll("[data-view]").forEach(function (section) { section.hidden = section.dataset.view !== name; });
-        root.querySelectorAll("[data-nav]").forEach(function (button) { button.setAttribute("aria-selected", String(button.dataset.nav === name)); });
+        var hadFocusInHiddenView = false;
+        root.querySelectorAll("[data-view]").forEach(function (section) {
+          var hide = section.dataset.view !== name;
+          if (hide && section.contains(document.activeElement)) hadFocusInHiddenView = true;
+          section.hidden = hide;
+        });
+        root.querySelectorAll("[data-nav]").forEach(function (button) { button.setAttribute("aria-pressed", String(button.dataset.nav === name)); });
+        /* Focus mag niet op een verborgen element achterblijven: verplaats hem naar de kop van de nieuwe view. */
+        if (hadFocusInHiddenView) {
+          var section = root.querySelector('[data-view="' + name + '"]');
+          var heading = section ? section.querySelector("h2, h3") : null;
+          if (heading) {
+            heading.setAttribute("tabindex", "-1");
+            heading.focus({ preventScroll: false });
+          }
+        }
       }
 
       root.addEventListener("click", function (event) {
@@ -3574,6 +3816,12 @@ svg {
           return;
         }
         if (event.target.matches("[data-meal-check]")) {
+          /* Consistent met vocht: maaltijden voor toekomstige dagen zijn nog niet af te vinken. */
+          if (mealDateForDay(state.selectedMealDay) > currentTodayIso()) {
+            event.target.checked = false;
+            showToast("nutritionQualityToast", "Je kunt maaltijden pas op de betreffende dag afvinken.", true);
+            return;
+          }
           var key = mealLogKey(state.selectedMealDay);
           var mealIndex = safeNumber(event.target.dataset.mealCheck, 0);
           var logs = state.mealLogs[key] || [];
@@ -3592,7 +3840,11 @@ svg {
           renderNutrition();
           return;
         }
-        if (event.target.id === "importData") importData(event.target.files[0]);
+        if (event.target.id === "importData") {
+          importData(event.target.files[0]);
+          /* Reset zodat hetzelfde (gecorrigeerde) bestand opnieuw een change-event geeft. */
+          event.target.value = "";
+        }
       });
 
       root.addEventListener("input", function (event) {
@@ -3601,19 +3853,19 @@ svg {
           var field = event.target.dataset.logField;
           if (!activeSession.logs[logIndex]) activeSession.logs[logIndex] = {};
           activeSession.logs[logIndex][field] = event.target.value;
-          persistActiveSession();
+          persistActiveSessionSoon();
           return;
         }
         if (activeSession && event.target.id === "sessionRpe") {
           activeSession.rpe = safeNumber(event.target.value, 6);
           root.querySelector("#sessionRpeValue").value = activeSession.rpe;
-          persistActiveSession();
+          persistActiveSessionSoon();
           return;
         }
         if (activeSession && event.target.id === "sessionKnee") {
           activeSession.kneePain = safeNumber(event.target.value, 0);
           root.querySelector("#sessionKneeValue").value = activeSession.kneePain;
-          persistActiveSession();
+          persistActiveSessionSoon();
           return;
         }
         if (["weeklyWeight", "weeklyEnergy", "weeklySleep", "weeklyKnee"].indexOf(event.target.id) !== -1) {
@@ -3645,6 +3897,10 @@ svg {
       function refreshForDateRollover() {
         var currentDay = currentTodayIso();
         if (currentDay === todayIso) return;
+        /* Niet midden in een invulactie (bv. de weekcheck rond middernacht) alles wegrenderen;
+           de volgende tick of tabwissel probeert het opnieuw. */
+        var active = document.activeElement;
+        if (active && root.contains(active) && active.matches("input, select, textarea")) return;
         todayIso = currentDay;
         state.selectedWeek = currentProgramWeek();
         state.selectedMealDay = todayMealDay();
@@ -3655,7 +3911,19 @@ svg {
       document.addEventListener("visibilitychange", function () {
         if (!document.hidden) refreshForDateRollover();
       });
-      if ("serviceWorker" in navigator && location.protocol === "https:" && document.documentElement.hasAttribute("data-visualize-standalone")) {
+      var navRow = root.querySelector(".nav-row");
+      function updateNavOverflowHint() {
+        if (!navRow) return;
+        var overflow = navRow.scrollWidth - navRow.clientWidth;
+        navRow.classList.toggle("has-overflow-end", overflow > 4 && navRow.scrollLeft < overflow - 4);
+        navRow.classList.toggle("has-overflow-start", overflow > 4 && navRow.scrollLeft > 4);
+      }
+      if (navRow) {
+        navRow.addEventListener("scroll", updateNavOverflowHint, { passive: true });
+        window.addEventListener("resize", updateNavOverflowHint);
+        updateNavOverflowHint();
+      }
+      if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") && document.documentElement.hasAttribute("data-visualize-standalone")) {
         window.addEventListener("load", function () {
           navigator.serviceWorker.register("./service-worker.js").catch(function () {});
         });
@@ -3664,231 +3932,7 @@ svg {
   </script>
 </div>
 
-<script id="codex-visualization-floating-ui-core" src="https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js"></script>
-<script id="codex-visualization-floating-ui-dom" src="https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js"></script>
-<script id="codex-visualization-lucide" async src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js"></script>
-<script id="codex-visualization-tooltip">/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return */
-// Runs inside the visualization sandbox, not the host webview.
-(() => {
-  if (window.FloatingUIDOM == null) {
-    return;
-  }
-  const { autoUpdate, computePosition, flip, offset, shift, size } =
-    window.FloatingUIDOM;
-  const tooltipPlacements = new Set(["top", "right", "bottom", "left"]);
-  const tooltipId = `codex-visualization-tooltip-${
-    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
-  }`;
-  const tooltipGap = 5;
-  const hoverDelay = 700;
-  const skipDelay = 300;
-  let activeTrigger = null;
-  let pendingTrigger = null;
-  let tooltip = null;
-  let openTimeout = null;
-  let autoUpdateCleanup = null;
-  let positionRequest = 0;
-  let skipDelayUntil = 0;
-
-  const getTrigger = (target) =>
-    target?.nodeType === Node.ELEMENT_NODE
-      ? target.closest("[data-tooltip]")
-      : null;
-  const containsTarget = (trigger, target) =>
-    target?.nodeType != null && trigger.contains(target);
-  const getContent = (trigger) =>
-    trigger.getAttribute("data-tooltip")?.trim() ?? "";
-  const getPlacement = (trigger) => {
-    const placement = trigger.getAttribute("data-tooltip-placement");
-    return tooltipPlacements.has(placement) ? placement : "top";
-  };
-  const getTooltip = () => {
-    if (tooltip == null) {
-      tooltip = document.createElement("div");
-      tooltip.id = tooltipId;
-      tooltip.className = "tooltip";
-      tooltip.setAttribute("role", "tooltip");
-    }
-    return tooltip;
-  };
-  const setDescribedBy = (trigger, described) => {
-    const ids = new Set(
-      (trigger.getAttribute("aria-describedby") ?? "")
-        .split(/\s+/)
-        .filter(Boolean),
-    );
-    if (described) {
-      ids.add(tooltipId);
-    } else {
-      ids.delete(tooltipId);
-    }
-    if (ids.size === 0) {
-      trigger.removeAttribute("aria-describedby");
-    } else {
-      trigger.setAttribute("aria-describedby", [...ids].join(" "));
-    }
-  };
-  const clearOpenTimeout = () => {
-    if (openTimeout != null) {
-      window.clearTimeout(openTimeout);
-      openTimeout = null;
-    }
-    pendingTrigger = null;
-  };
-  const closeTooltip = (activateSkipDelay = true) => {
-    clearOpenTimeout();
-    positionRequest += 1;
-    autoUpdateCleanup?.();
-    autoUpdateCleanup = null;
-    if (activeTrigger == null) {
-      return;
-    }
-    setDescribedBy(activeTrigger, false);
-    activeTrigger = null;
-    tooltip?.remove();
-    if (activateSkipDelay) {
-      skipDelayUntil = Date.now() + skipDelay;
-    }
-  };
-  const updatePosition = (trigger, floating) => {
-    const request = ++positionRequest;
-    void computePosition(trigger, floating, {
-      middleware: [
-        offset(tooltipGap),
-        flip({ padding: tooltipGap }),
-        shift({ padding: tooltipGap }),
-        size({
-          padding: tooltipGap,
-          apply({ availableHeight, availableWidth, elements }) {
-            elements.floating.style.setProperty(
-              "--tooltip-available-width",
-              `${Math.max(0, availableWidth)}px`,
-            );
-            elements.floating.style.setProperty(
-              "--tooltip-available-height",
-              `${Math.max(0, availableHeight)}px`,
-            );
-          },
-        }),
-      ],
-      placement: getPlacement(trigger),
-      strategy: "fixed",
-    })
-      .then(({ x, y }) => {
-        if (activeTrigger !== trigger || request !== positionRequest) {
-          return;
-        }
-        const scale = window.devicePixelRatio || 1;
-        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
-        floating.style.visibility = "visible";
-      })
-      .catch(() => {
-        if (activeTrigger === trigger && request === positionRequest) {
-          closeTooltip(false);
-        }
-      });
-  };
-  const openTooltip = (trigger) => {
-    const content = getContent(trigger);
-    if (!trigger.isConnected || content.length === 0) {
-      return;
-    }
-    clearOpenTimeout();
-    if (activeTrigger === trigger) {
-      return;
-    }
-    closeTooltip();
-    const floating = getTooltip();
-    floating.textContent = content;
-    floating.style.visibility = "hidden";
-    floating.style.transform = "translate(0, 0)";
-    document.body.appendChild(floating);
-    activeTrigger = trigger;
-    setDescribedBy(trigger, true);
-    autoUpdateCleanup = autoUpdate(trigger, floating, () => {
-      updatePosition(trigger, floating);
-    });
-  };
-  const requestOpen = (trigger, immediate = false) => {
-    if (
-      getContent(trigger).length === 0 ||
-      activeTrigger === trigger ||
-      pendingTrigger === trigger
-    ) {
-      return;
-    }
-    clearOpenTimeout();
-    pendingTrigger = trigger;
-    const delay =
-      immediate || activeTrigger != null || Date.now() < skipDelayUntil
-        ? 0
-        : hoverDelay;
-    if (delay === 0) {
-      openTooltip(trigger);
-      return;
-    }
-    openTimeout = window.setTimeout(() => {
-      openTimeout = null;
-      pendingTrigger = null;
-      openTooltip(trigger);
-    }, delay);
-  };
-  const handlePointerOpen = (event) => {
-    if (event.pointerType === "touch") {
-      return;
-    }
-    const trigger = getTrigger(event.target);
-    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
-      return;
-    }
-    requestOpen(trigger);
-  };
-  const handleLeave = (event) => {
-    const trigger = getTrigger(event.target);
-    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
-      return;
-    }
-    if (activeTrigger === trigger || pendingTrigger === trigger) {
-      closeTooltip();
-    }
-  };
-  const handleFocusIn = (event) => {
-    const trigger = getTrigger(event.target);
-    if (trigger?.matches(":focus-visible")) {
-      requestOpen(trigger, true);
-    }
-  };
-  const handleKeyDown = (event) => {
-    if (event.key === "Escape") {
-      closeTooltip();
-    }
-  };
-  const handleContextMenu = (event) => {
-    const trigger = getTrigger(event.target);
-    if (activeTrigger === trigger || pendingTrigger === trigger) {
-      closeTooltip();
-    }
-  };
-  const destroy = () => {
-    closeTooltip(false);
-    document.removeEventListener("pointerover", handlePointerOpen);
-    document.removeEventListener("pointerout", handleLeave);
-    document.removeEventListener("focusin", handleFocusIn);
-    document.removeEventListener("focusout", handleLeave);
-    document.removeEventListener("keydown", handleKeyDown);
-    document.removeEventListener("contextmenu", handleContextMenu);
-    tooltip = null;
-  };
-
-  document.addEventListener("pointerover", handlePointerOpen);
-  document.addEventListener("pointerout", handleLeave);
-  document.addEventListener("focusin", handleFocusIn);
-  document.addEventListener("focusout", handleLeave);
-  document.addEventListener("keydown", handleKeyDown);
-  document.addEventListener("contextmenu", handleContextMenu);
-  window.addEventListener("pagehide", destroy, { once: true });
-})();
-</script>
+<script id="codex-visualization-lucide" async src="./vendor/lucide.min.js"></script>
 <script id="codex-visualization-lucide-initialization">(() => {
   const initialize = () => {
     globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
