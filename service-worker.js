@@ -1,8 +1,9 @@
-const CACHE_NAME = "momentum-v2.10.1";
+const CACHE_NAME = "momentum-v2.11.0";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.js",
+  "./logic.js",
   "./manifest.webmanifest",
   "./vendor/lucide.min.js",
   "./icons/icon-180.png",
@@ -47,9 +48,10 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // app.js bevat de volledige applicatiecode: network-first, zodat updates
+  // app.js en logic.js bevatten de applicatiecode: network-first, zodat updates
   // direct doorkomen (net als index.html) en offline de cache het overneemt.
-  if (new URL(event.request.url).pathname.endsWith("/app.js")) {
+  const pathname = new URL(event.request.url).pathname;
+  if (pathname.endsWith("/app.js") || pathname.endsWith("/logic.js")) {
     event.respondWith(
       fetch(event.request)
         .then(response => {

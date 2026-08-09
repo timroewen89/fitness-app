@@ -15,6 +15,8 @@ jobs:
           node-version: 22
       - name: Installeer dependencies
         run: npm install
+      - name: Lint
+        run: npm run lint
       - name: Installeer Playwright-browser
         run: npx playwright install --with-deps chromium
       - name: Draai smoketests

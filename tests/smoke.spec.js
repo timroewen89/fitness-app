@@ -228,3 +228,43 @@ test("oefeningen hebben uitklapbare uitvoeringsinstructies met YouTube-link", as
   await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
   await expect(page.locator(".session-block .exercise-guide").first()).toBeAttached();
 });
+
+test("conditiemeting: opslaan in een meetweek en terugzien in de historie", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  // Vers profiel start vandaag → week 1 is een meetweek
+  await page.fill("#fitnessTestDistance", "2400");
+  await page.click("#saveFitnessTest");
+  await expect(page.locator("#fitnessTestToast")).toContainText("opgeslagen");
+  await expect(page.locator("#fitnessTestCard .history-item").first()).toContainText("2400 m");
+  await expect(page.locator("#fitnessTestCard .history-item").first()).toContainText("eerste meting");
+});
+
+test("dagmenu's ruilen is ongedaan te maken", async ({ page }) => {
+  await page.click('[data-nav="nutrition"]');
+  const before = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
+  const otherDay = await page.locator("#mealSwapSelect option:not([value=''])").first().getAttribute("value");
+  await page.selectOption("#mealSwapSelect", otherDay);
+  await expect(page.locator("#nutritionQualityToast")).toContainText("geruild");
+  await page.click("#nutritionQualityToast [data-undo]");
+  const restored = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
+  expect(restored).toBe(before);
+});
+
+test("PR-detectie meldt een nieuw record bij zwaarder gewicht", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  // Sessie 1: 20 kg loggen
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  const weightInput = page.locator('[data-session-log][data-log-field="weight"]:visible').first();
+  await weightInput.fill("20");
+  const idx = await weightInput.getAttribute("data-session-log");
+  await page.locator(`[data-session-check="${idx}"]`).check();
+  await page.click("#completeWorkout");
+  // Sessie 2: 25 kg → record
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  await page.locator('[data-session-log][data-log-field="weight"]:visible').first().fill("25");
+  await page.locator(`[data-session-check="${idx}"]`).check();
+  await page.click("#completeWorkout");
+  await expect(page.locator("#trainingToast")).toContainText("Nieuw record");
+  await page.click('[data-nav="progress"]');
+  await expect(page.locator(".pr-badge").first()).toBeVisible();
+});
