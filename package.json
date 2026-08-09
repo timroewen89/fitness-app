@@ -1,0 +1,12 @@
+{
+  "name": "momentum-fitness-tracker",
+  "version": "2.10.0",
+  "private": true,
+  "description": "Persoonlijke fitness-, voedings- en herstelcoach (PWA).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

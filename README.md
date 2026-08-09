@@ -10,6 +10,10 @@
 
 Upload alle bestanden en behoud de map `icons`. De app gebruikt `manifest.webmanifest` en `service-worker.js` voor installatie en offline gebruik.
 
-De persoonlijke voortgang wordt in de browser op het apparaat opgeslagen. Gebruik regelmatig **Profiel → Back-up downloaden**.
+De persoonlijke voortgang wordt in de browser op het apparaat opgeslagen. Gebruik regelmatig **Profiel → Back-up downloaden**. Je kunt de back-up daarbij met een wachtwoord versleutelen (aanbevolen: het bestand bevat je gezondheidsgegevens). Let op: alle websites op hetzelfde `github.io`-account delen dezelfde browseropslag; gebruik voor maximale afscherming een eigen (sub)domein.
+
+## Ontwikkelen
+
+De testsuite draait met [Playwright](https://playwright.dev): `npm install`, `npx playwright install chromium` en daarna `npm test`. De tests draaien ook automatisch via GitHub Actions bij elke push en pull request.
 
 Versie 2.9 voegt een nauwkeurig, grotendeels plantaardig weekmenu toe, houdt eiwit op peil bij calorieaanpassingen en volgt vezels, groente, fruit en vocht. Eigen voeding kan nu ook een gepland menu-item vervangen zonder dubbeltelling. Het trainingsplan bevat daarnaast instelbare trainingsdagen en concrete progressieregels.

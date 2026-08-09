@@ -1,12 +1,15 @@
-const CACHE_NAME = "momentum-v2.9.1";
+const CACHE_NAME = "momentum-v2.10.0";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./app.js",
   "./manifest.webmanifest",
   "./vendor/lucide.min.js",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-192.png",
+  "./icons/icon-maskable-512.png"
 ];
 
 self.addEventListener("install", event => {
@@ -40,6 +43,24 @@ self.addEventListener("fetch", event => {
             .then(() => response);
         })
         .catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
+
+  // app.js bevat de volledige applicatiecode: network-first, zodat updates
+  // direct doorkomen (net als index.html) en offline de cache het overneemt.
+  if (new URL(event.request.url).pathname.endsWith("/app.js")) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (!response || !response.ok) return response;
+          const copy = response.clone();
+          return caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, copy))
+            .catch(() => undefined)
+            .then(() => response);
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
