@@ -270,7 +270,9 @@
         trainingSchedule: "mon-wed-sat",
         nutritionSettings: { portionScale: 1, saturdayProtein: "vega", sundayProtein: "tofu" },
         pendingCalories: null,
-        activeSession: null
+        activeSession: null,
+        lastBackupAt: null,
+        backupSnoozeUntil: null
       };
 
       var state = loadState();
@@ -365,6 +367,8 @@
         merged.selectedWeek = Math.min(12, Math.max(1, Math.round(safeNumber(merged.selectedWeek, 1))));
         merged.selectedNutritionMode = merged.selectedNutritionMode === "shopping" ? "shopping" : "meals";
         if (VIEW_NAMES.indexOf(merged.selectedView) === -1) merged.selectedView = "dashboard";
+        if (!isIsoDay(merged.lastBackupAt)) merged.lastBackupAt = null;
+        if (!isIsoDay(merged.backupSnoozeUntil)) merged.backupSnoozeUntil = null;
         return merged;
       }
 
@@ -581,6 +585,32 @@
         root.querySelector("#todayLabel").textContent = new Date().toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
       }
 
+      function weekGoalMet(week, cycle) {
+        return workouts.filter(function (workout) { return workout.type === "Vast"; })
+          .every(function (workout) { return isComplete(week, workout.id, cycle); });
+      }
+
+      /* Aaneengesloten weken (t/m nu) waarin het weekdoel is gehaald. De lopende
+         week telt mee zodra hij gehaald is, maar breekt de streak niet zolang
+         hij nog bezig is. */
+      function currentStreak() {
+        var position = programPositionForDay(currentTodayIso());
+        var absolute = (position.cycle - 1) * 12 + position.week;
+        var streak = 0;
+        for (var k = absolute; k >= 1; k--) {
+          var week = (k - 1) % 12 + 1;
+          var cycle = Math.floor((k - 1) / 12) + 1;
+          var met = weekGoalMet(week, cycle);
+          if (k === absolute) {
+            if (met) streak += 1;
+            continue;
+          }
+          if (!met) break;
+          streak += 1;
+        }
+        return streak;
+      }
+
       function getWeekCompletions(week) {
         return workouts.filter(function (workout) { return isComplete(week, workout.id); });
       }
@@ -733,7 +763,22 @@
         preserveUiState(renderDashboardCore);
       }
 
+      function renderBackupReminder() {
+        var reminder = root.querySelector("#backupReminder");
+        if (!reminder) return;
+        var due = backupReminderDue();
+        reminder.hidden = !due;
+        reminder.innerHTML = due
+          ? "<div class=\"card backup-reminder\"><strong>Tijd voor een back-up</strong><p class=\"text-small text-muted\">" +
+            (state.lastBackupAt
+              ? "Je laatste back-up was op " + formatDate(state.lastBackupAt) + "."
+              : "Je voortgang staat alleen op dit apparaat; zonder back-up ben je alles kwijt als het apparaat wegvalt.") +
+            "</p><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" data-backup-now>Back-up maken</button><button class=\"btn\" type=\"button\" data-backup-later>Herinner me over een week</button></div></div>"
+          : "";
+      }
+
       function renderDashboardCore() {
+        renderBackupReminder();
         var week = currentProgramWeek();
         var cycle = currentProgramCycle();
         var phase = trainingPlanFor(week);
@@ -741,10 +786,12 @@
         var coreDone = completed.filter(function (w) { return w.type === "Vast"; }).length;
         var manualSessions = manualSessionsForCurrentWeek();
         var delta = weightDelta();
+        var streak = currentStreak();
         var stats = [
           ["Programma", "Cyclus " + cycle + " · week " + week + "/12", phase.label],
           ["Trainingen", coreDone + "/3", manualSessions.length ? manualSessions.length + " handmatig extra" : (completed.length > coreDone ? "+ optionele dag" : "vaste sessies")],
-          ["Gewichtstrend", (delta > 0 ? "+" : "") + delta.toFixed(1) + " kg", state.weights.length < 2 ? "eerste meetpunt" : "sinds de start"]
+          ["Gewichtstrend", (delta > 0 ? "+" : "") + delta.toFixed(1) + " kg", state.weights.length < 2 ? "eerste meetpunt" : "sinds de start"],
+          ["Weekstreak", String(streak) + (streak === 1 ? " week" : " weken"), streak > 0 ? "weekdoel op rij gehaald" : "haal het weekdoel voor je streak"]
         ];
         root.querySelector("#dashboardStats").innerHTML = stats.map(function (item) {
           return "<article class=\"card viz-stat\"><span class=\"text-muted\">" + item[0] + "</span><div class=\"viz-stat-value\">" + item[1] + "</div><span class=\"text-small text-muted\">" + item[2] + "</span></article>";
@@ -821,6 +868,49 @@
         if (type === "rounds") return [["rounds", "Rondes", "1"]];
         if (type === "timed") return [["sets", "Sets", "1"], ["seconds", "Seconden", "1"]];
         return [["sets", "Sets", "1"], ["reps", "Herhalingen", "1"], ["weight", "Gewicht (kg)", "0.5"]];
+      }
+
+      /* Zoek de recentste gelogde waarden voor dezelfde oefening (op naam, over
+         weekgrenzen heen) zodat progressieve overload concreet wordt. */
+      function previousLogForExercise(workoutId, exerciseName) {
+        var workout = workouts.find(function (item) { return item.id === workoutId; });
+        if (!workout) return null;
+        for (var i = state.workoutHistory.length - 1; i >= 0; i--) {
+          var record = state.workoutHistory[i];
+          if (record.workoutId !== workoutId || record.manual === true || !record.logs) continue;
+          var names = workout.exercises(safeNumber(record.week, 1)).map(function (item) { return item[0]; });
+          var index = names.indexOf(exerciseName);
+          if (index === -1 || !record.logs[index]) continue;
+          var log = record.logs[index];
+          var hasValue = Object.keys(log).some(function (key) {
+            return key !== "alternative" && String(log[key]).trim() !== "";
+          });
+          if (hasValue) return { log: log, day: record.day || String(record.date || "").slice(0, 10) };
+        }
+        return null;
+      }
+
+      function formatPreviousLog(exercise, log) {
+        var type = exerciseLogType(exercise);
+        var v = function (key) { var value = log[key]; return value === undefined || String(value).trim() === "" ? null : String(value); };
+        if (type === "cardio") {
+          var parts = [];
+          if (v("minutes")) parts.push(v("minutes") + " min");
+          if (v("distance")) parts.push(v("distance") + " km");
+          return parts.join(", ");
+        }
+        if (type === "rounds") return v("rounds") ? v("rounds") + " rondes" : "";
+        if (type === "timed") {
+          if (v("sets") && v("seconds")) return v("sets") + "\u00d7" + v("seconds") + " s";
+          if (v("seconds")) return v("seconds") + " s";
+          return v("sets") ? v("sets") + " sets" : "";
+        }
+        var parts = [];
+        if (v("sets") && v("reps")) parts.push(v("sets") + "\u00d7" + v("reps"));
+        else if (v("sets")) parts.push(v("sets") + " sets");
+        else if (v("reps")) parts.push(v("reps") + " herh.");
+        if (v("weight")) parts.push("@ " + v("weight") + " kg");
+        return parts.join(" ");
       }
 
       function alternativesFor(exerciseName) {
@@ -1031,9 +1121,12 @@
             var value = log[field[0]] === undefined ? "" : log[field[0]];
             return "<label class=\"form-label\">" + field[1] + "<input class=\"form-control\" type=\"number\" min=\"0\" step=\"" + field[2] + "\" value=\"" + escapeHtml(value) + "\" data-session-log=\"" + index + "\" data-log-field=\"" + field[0] + "\"></label>";
           }).join("");
+          var previous = previousLogForExercise(activeSession.workoutId, exercise[0]);
+          var previousText = previous ? formatPreviousLog(exercise, previous.log) : "";
+          var previousHint = previousText ? "<p class=\"text-small text-muted session-previous\">Vorige keer (" + formatDate(previous.day) + "): " + escapeHtml(previousText) + "</p>" : "";
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
-          return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div><div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
+          return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div>" + previousHint + "<div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
         }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Rust 60 sec</button><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
         updateSessionClocks();
       }
@@ -2022,6 +2115,25 @@
         deliverBackup(json, fileName);
       }
 
+      function markBackupMade() {
+        state.lastBackupAt = currentTodayIso();
+        state.backupSnoozeUntil = null;
+        saveState();
+        refreshView("dashboard");
+      }
+
+      function backupReminderDue() {
+        var today = currentTodayIso();
+        if (state.backupSnoozeUntil && today < state.backupSnoozeUntil) return false;
+        if (!state.lastBackupAt) {
+          /* Pas herinneren zodra er iets te verliezen valt. */
+          return state.workoutHistory.length + state.weeklyCheckins.length + state.kneeChecks.length >= 3;
+        }
+        var last = new Date(state.lastBackupAt + "T12:00:00");
+        var now = new Date(today + "T12:00:00");
+        return Math.round((now - last) / 86400000) >= 30;
+      }
+
       function deliverBackup(json, fileName) {
         /* In een iOS-standalone-app is een downloadlink onbetrouwbaar; het deelmenu
            (Bewaar in Bestanden) is daar de robuuste route. Elders blijft downloaden werken. */
@@ -2030,7 +2142,7 @@
             var shareFile = new File([json], fileName, { type: "application/json" });
             if (navigator.canShare({ files: [shareFile] })) {
               navigator.share({ files: [shareFile], title: "Momentum back-up" })
-                .then(function () { showToast("dataToast", "Back-up gedeeld."); })
+                .then(function () { markBackupMade(); showToast("dataToast", "Back-up gedeeld."); })
                 .catch(function (error) {
                   if (error && error.name !== "AbortError") downloadBackupFile(json, fileName);
                 });
@@ -2051,6 +2163,7 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
+        markBackupMade();
         showToast("dataToast", "Back-up gedownload.");
       }
 
@@ -2180,6 +2293,15 @@
         if (nav) { showView(nav.dataset.nav); return; }
         var start = event.target.closest("[data-start-workout]");
         if (start) { startWorkout(start.dataset.startWorkout, safeNumber(start.dataset.week, state.selectedWeek)); return; }
+        if (event.target.closest("[data-backup-now]")) { showView("settings"); return; }
+        if (event.target.closest("[data-backup-later]")) {
+          var snoozeUntil = new Date(currentTodayIso() + "T12:00:00");
+          snoozeUntil.setDate(snoozeUntil.getDate() + 7);
+          state.backupSnoozeUntil = localIso(snoozeUntil);
+          saveState();
+          renderDashboard();
+          return;
+        }
         if (event.target.closest("[data-open-training]")) { showView("training"); return; }
         if (event.target.closest("[data-open-weekly]")) { showView("weekly"); return; }
         var nutritionMode = event.target.closest("[data-nutrition-mode]");
