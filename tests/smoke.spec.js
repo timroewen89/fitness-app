@@ -162,3 +162,55 @@ test("back-upherinnering verschijnt bij data zonder back-up en is te snoozen", a
   await page.click("[data-backup-later]");
   await expect(page.locator("#backupReminder")).toBeHidden();
 });
+
+test("rustduur is instelbaar en wordt aangekondigd", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  await page.selectOption("#restDurationSelect", "90");
+  await page.click("#restButton");
+  await expect(page.locator("#sessionToast")).toContainText("90 seconden");
+  await expect(page.locator("#restClock")).toContainText("Rust 90s");
+});
+
+test("weekrapporten staan in de voortgangsview", async ({ page }) => {
+  await page.click('[data-nav="progress"]');
+  await expect(page.locator("#weeklyReports .history-item").first()).toContainText(/Cyclus 1 · week \d+/);
+});
+
+test("agenda-export levert een geldig .ics-bestand", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.click("#exportCalendar")
+  ]);
+  const content = require("fs").readFileSync(await download.path(), "utf8");
+  expect(content).toContain("BEGIN:VCALENDAR");
+  expect((content.match(/RRULE:FREQ=WEEKLY;BYDAY=[A-Z]{2};COUNT=12/g) || []).length).toBe(3);
+});
+
+test("eigen voeding: snelkeuze verschijnt en verwijderen is ongedaan te maken", async ({ page }) => {
+  await page.click('[data-nav="nutrition"]');
+  await page.click("#openCustomFood");
+  await page.fill("#customFoodName", "Proteïnereep");
+  await page.fill("#customFoodCalories", "200");
+  await page.fill("#customFoodProtein", "20");
+  await page.click("#customFoodSubmit");
+  // Snelkeuze-knop verschijnt
+  await expect(page.locator('[data-quick-food]')).toContainText("Proteïnereep");
+  // Verwijderen toont een undo-knop in plaats van een confirm
+  await page.locator("[data-delete-food]").first().click();
+  await expect(page.locator("#customFoodSectionToast [data-undo]")).toBeVisible();
+  await page.click("#customFoodSectionToast [data-undo]");
+  await expect(page.locator("#customFoodHistory")).toContainText("Proteïnereep");
+});
+
+test("dagmenu's ruilen wisselt de menu-inhoud", async ({ page }) => {
+  await page.click('[data-nav="nutrition"]');
+  const before = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
+  page.once("dialog", dialog => dialog.accept());
+  const otherDay = await page.locator("#mealSwapSelect option:not([value=''])").first().getAttribute("value");
+  await page.selectOption("#mealSwapSelect", otherDay);
+  await expect(page.locator("#nutritionQualityToast")).toContainText("geruild");
+  const after = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
+  expect(after).not.toBe(before);
+});
