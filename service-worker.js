@@ -1,4 +1,4 @@
-const CACHE_NAME = "momentum-v2.11.0";
+const CACHE_NAME = "momentum-v2.11.1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -36,7 +36,8 @@ self.addEventListener("fetch", event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (!response || !response.ok) return response;
+          // Bij serverfouten (bv. 500) terugvallen op de gecachte kopie.
+          if (!response || !response.ok) return caches.match("./index.html").then(cached => cached || response);
           const copy = response.clone();
           return caches.open(CACHE_NAME)
             .then(cache => cache.put("./index.html", copy))
@@ -55,7 +56,7 @@ self.addEventListener("fetch", event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (!response || !response.ok) return response;
+          if (!response || !response.ok) return caches.match(event.request).then(cached => cached || response);
           const copy = response.clone();
           return caches.open(CACHE_NAME)
             .then(cache => cache.put(event.request, copy))

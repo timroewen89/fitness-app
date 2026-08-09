@@ -396,7 +396,11 @@
         var merged = Object.assign({}, defaultState, saved);
           merged.profile = Object.assign({}, defaultState.profile, saved.profile || {});
           merged.completions = saved.completions || {};
-          merged.mealLogs = saved.mealLogs || {};
+          merged.mealLogs = {};
+        var savedMealLogs = saved.mealLogs && typeof saved.mealLogs === "object" ? saved.mealLogs : {};
+        Object.keys(savedMealLogs).forEach(function (key) {
+          if (Array.isArray(savedMealLogs[key])) merged.mealLogs[key] = savedMealLogs[key].map(function (value) { return Math.round(Number(value)); }).filter(Number.isFinite);
+        });
           merged.customFoodLogs = Array.isArray(saved.customFoodLogs) ? saved.customFoodLogs : [];
           merged.waterLogs = saved.waterLogs && typeof saved.waterLogs === "object" ? saved.waterLogs : {};
           merged.shoppingChecks = saved.shoppingChecks || {};
@@ -513,7 +517,7 @@
 
       /* Behoud focus en open <details>-elementen over volledige innerHTML-rebuilds heen,
          zodat toetsenbord- en VoiceOver-gebruikers hun positie niet verliezen bij elk vinkje. */
-      var UI_STATE_ATTRS = ["data-meal-check", "data-shopping-check", "data-meal-day", "data-nutrition-mode", "data-session-check", "data-session-log", "data-session-alternative", "data-start-workout", "data-edit-food", "data-delete-food"];
+      var UI_STATE_ATTRS = ["data-meal-check", "data-shopping-check", "data-meal-day", "data-nutrition-mode", "data-session-check", "data-session-log", "data-session-alternative", "data-start-workout", "data-edit-food", "data-delete-food", "data-quick-food"];
 
       function uiFocusKeyFor(element) {
         if (!element || element === document.body) return null;
@@ -817,7 +821,7 @@
           : "<p class=\"empty-state\">Nog geen metingen. De eerste meting hoort bij week 1.</p>";
         var nextWeek = FITNESS_TEST_WEEKS.filter(function (value) { return value > week; })[0];
         var form = isTestWeek
-          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
+          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" inputmode=\"numeric\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\" data-cycle=\"" + cycle + "\" data-week=\"" + week + "\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
           : "<p class=\"text-small text-muted\">Volgende meting in week " + (nextWeek || "1 van de volgende cyclus") + ".</p>";
         host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "";
       }
@@ -829,7 +833,10 @@
           showToast("fitnessTestToast", "Vul een afstand tussen 200 en 20.000 meter in.", true);
           return;
         }
-        state.fitnessTests[fitnessTestKey(currentProgramCycle(), currentProgramWeek())] = { day: currentTodayIso(), distance: distance };
+        var button = root.querySelector("#saveFitnessTest");
+        var cycle = Math.max(1, Math.round(safeNumber(button && button.dataset.cycle, currentProgramCycle())));
+        var week = Math.min(12, Math.max(1, Math.round(safeNumber(button && button.dataset.week, currentProgramWeek()))));
+        state.fitnessTests[fitnessTestKey(cycle, week)] = { day: currentTodayIso(), distance: distance };
         saveState();
         renderFitnessTest();
         showToast("fitnessTestToast", "Conditiemeting opgeslagen.");
@@ -1261,9 +1268,9 @@
         if (!workout) return;
         clearInterval(sessionTicker);
         clearInterval(restTicker);
-        var previous = latestWorkoutRecord(id);
-        var previousLogs = previous && previous.logs ? JSON.parse(JSON.stringify(previous.logs)) : {};
-        activeSession = { workoutId: id, week: week, cycle: currentProgramCycle(), startedAt: Date.now(), checked: [], logs: previousLogs, rpe: 6, kneePain: 0 };
+        /* Vorige waarden niet voorvullen (dat logde oude prestaties opnieuw als
+           je alleen afvinkte); de "Vorige keer"-hint en placeholders tonen ze wel. */
+        activeSession = { workoutId: id, week: week, cycle: currentProgramCycle(), startedAt: Date.now(), checked: [], logs: {}, rpe: 6, kneePain: 0 };
         restSeconds = 0;
         restEndsAt = 0;
         restSignalled = true;
@@ -1295,17 +1302,18 @@
         host.innerHTML = "<article class=\"card active-session\"><span class=\"viz-badge\">Training actief</span><h3>" + escapeHtml(workout.title) + "</h3><div class=\"session-clock\" id=\"sessionClock\">00:00</div><p class=\"text-small text-muted\">Vink iedere oefening af en registreer je werkelijke prestatie. Waarde 0 kg betekent lichaamsgewicht.</p><div>" + exercises.map(function (exercise, index) {
           var checked = activeSession.checked.indexOf(index) !== -1;
           var log = activeSession.logs[index] || {};
-          var fields = exerciseFields(exercise).map(function (field) {
-            var value = log[field[0]] === undefined ? "" : log[field[0]];
-            return "<label class=\"form-label\">" + field[1] + "<input class=\"form-control\" type=\"number\" min=\"0\" step=\"" + field[2] + "\" value=\"" + escapeHtml(value) + "\" data-session-log=\"" + index + "\" data-log-field=\"" + field[0] + "\"></label>";
-          }).join("");
           var previous = previousLogForExercise(activeSession.workoutId, exercise[0]);
           var previousText = previous ? formatPreviousLog(exercise, previous.log) : "";
           var previousHint = previousText ? "<p class=\"text-small text-muted session-previous\">Vorige keer (" + formatDate(previous.day) + "): " + escapeHtml(previousText) + "</p>" : "";
+          var fields = exerciseFields(exercise).map(function (field) {
+            var value = log[field[0]] === undefined ? "" : log[field[0]];
+            var hintValue = previous && previous.log[field[0]] !== undefined ? String(previous.log[field[0]]) : "";
+            return "<label class=\"form-label\">" + field[1] + "<input class=\"form-control\" type=\"number\" min=\"0\" step=\"" + field[2] + "\" placeholder=\"" + escapeHtml(hintValue) + "\" value=\"" + escapeHtml(value) + "\" data-session-log=\"" + index + "\" data-log-field=\"" + field[0] + "\"></label>";
+          }).join("");
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
           return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div>" + exerciseGuideHtml(log.alternative || exercise[0]) + previousHint + "<div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
-        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
+        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].concat([60, 90, 120].indexOf(state.restDuration) === -1 ? [state.restDuration] : []).sort(function (a, b) { return a - b; }).map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
         updateSessionClocks();
       }
 
@@ -1941,7 +1949,7 @@
           var status = record.manual ? "Handmatig" : (recordCountsForWeek(record) ? "Voltooid" : "Gedeeltelijk");
           var statusKey = record.manual ? "manual" : (recordCountsForWeek(record) ? "complete" : "partial");
           var exerciseSummary = record.manual && Array.isArray(record.exercises) ? "<span class=\"manual-exercise-summary text-small\">" + escapeHtml((record.manualType || "Gemengd") + " · " + record.exercises.join(" · ")) + "</span>" : "";
-          return "<tr><td class=\"text-nowrap\" data-label=\"Datum\">" + formatDate(record.day || String(record.date).slice(0, 10)) + "</td><td data-label=\"Training\"><div class=\"training-name\">" + escapeHtml(record.workoutTitle || record.workoutId) + "</div>" + exerciseSummary + " <span class=\"viz-badge training-status\" data-status=\"" + statusKey + "\">" + status + "</span>" + (record.prs && record.prs.length ? " <span class=\"viz-badge pr-badge\" title=\"" + escapeHtml(record.prs.join(", ")) + "\">PR</span>" : "") + "</td><td class=\"text-nowrap\" data-label=\"Duur\">" + safeNumber(record.duration, 0) + " min</td><td data-label=\"RPE\">" + safeNumber(record.rpe, 0) + "/10</td><td data-label=\"Advies\">" + escapeHtml(record.advice || workoutAdvice(record)) + "</td><td data-label=\"Acties\"><div class=\"card-actions\"><button class=\"btn\" type=\"button\" data-edit-workout=\"" + escapeHtml(record.id) + "\">Bewerk</button><button class=\"btn btn-danger\" type=\"button\" data-delete-workout=\"" + escapeHtml(record.id) + "\">Verwijder</button></div></td></tr>";
+          return "<tr><td class=\"text-nowrap\" data-label=\"Datum\">" + formatDate(record.day || String(record.date).slice(0, 10)) + "</td><td data-label=\"Training\"><div class=\"training-name\">" + escapeHtml(record.workoutTitle || record.workoutId) + "</div>" + exerciseSummary + " <span class=\"viz-badge training-status\" data-status=\"" + statusKey + "\">" + status + "</span>" + (record.prs && record.prs.length ? " <span class=\"viz-badge pr-badge\" role=\"img\" aria-label=\"Persoonlijk record: " + escapeHtml(record.prs.join(", ")) + "\">PR</span><span class=\"text-small pr-names\">Record: " + escapeHtml(record.prs.join(", ")) + "</span>" : "") + "</td><td class=\"text-nowrap\" data-label=\"Duur\">" + safeNumber(record.duration, 0) + " min</td><td data-label=\"RPE\">" + safeNumber(record.rpe, 0) + "/10</td><td data-label=\"Advies\">" + escapeHtml(record.advice || workoutAdvice(record)) + "</td><td data-label=\"Acties\"><div class=\"card-actions\"><button class=\"btn\" type=\"button\" data-edit-workout=\"" + escapeHtml(record.id) + "\">Bewerk</button><button class=\"btn btn-danger\" type=\"button\" data-delete-workout=\"" + escapeHtml(record.id) + "\">Verwijder</button></div></td></tr>";
         }).join("") : "<tr><td colspan=\"6\" class=\"text-muted\">Rond je eerste training af om hier prestaties te zien.</td></tr>";
       }
 
@@ -2392,7 +2400,8 @@
         var salt = base64ToBytes(payload.salt);
         var iv = base64ToBytes(payload.iv);
         var data = base64ToBytes(payload.data);
-        return backupCryptoKey(password, salt, safeNumber(payload.iterations, BACKUP_KDF_ITERATIONS)).then(function (key) {
+        var iterations = Math.min(1000000, Math.max(100000, Math.round(safeNumber(payload.iterations, BACKUP_KDF_ITERATIONS))));
+        return backupCryptoKey(password, salt, iterations).then(function (key) {
           return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
         }).then(function (plain) {
           return new TextDecoder().decode(plain);
@@ -2615,7 +2624,8 @@
         if (!element) return;
         element.textContent = message;
         element.classList.toggle("text-destructive", Boolean(destructive));
-        window.setTimeout(function () { if (element.textContent === message) element.textContent = ""; }, 3500);
+        /* Foutmeldingen blijven staan tot ze worden vervangen; succes verdwijnt vanzelf. */
+        if (!destructive) window.setTimeout(function () { if (element.textContent === message) element.textContent = ""; }, 3500);
       }
 
       function showView(name, options) {
@@ -2671,6 +2681,7 @@
             root.querySelector("#customFoodFiber").value = quickEntry.fiber === undefined || quickEntry.fiber === null ? "" : quickEntry.fiber;
             root.querySelector("#customFoodVegetables").value = quickEntry.vegetables === undefined || quickEntry.vegetables === null ? "" : quickEntry.vegetables;
             root.querySelector("#customFoodFruit").value = quickEntry.fruit === undefined || quickEntry.fruit === null ? "" : quickEntry.fruit;
+            root.querySelector("#customFoodName").focus({ preventScroll: true });
           }
           return;
         }
@@ -2740,6 +2751,7 @@
           state.backupSnoozeUntil = localIso(snoozeUntil);
           saveState();
           renderDashboard();
+          showToast("dashboardToast", "Prima \u2014 over een week herinneren we je opnieuw aan de back-up.");
           return;
         }
         if (event.target.closest("[data-open-training]")) { showView("training"); return; }
@@ -2937,7 +2949,7 @@
         /* Niet midden in een invulactie (bv. de weekcheck rond middernacht) alles wegrenderen;
            de volgende tick of tabwissel probeert het opnieuw. */
         var active = document.activeElement;
-        if (active && root.contains(active) && active.matches("input, select, textarea")) return;
+        if (active && root.contains(active) && active.matches('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea')) return;
         todayIso = currentDay;
         state.selectedWeek = currentProgramWeek();
         state.selectedMealDay = todayMealDay();
