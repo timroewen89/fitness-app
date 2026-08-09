@@ -842,6 +842,22 @@ svg {
     }
     /* Dubbele paginapadding opheffen: .app-shell verzorgt de randruimte. */
     :root:not([data-app-block-surface]) > body { padding: 0; }
+    /* De boilerplate tekent het vinkje alleen binnen .form-check; de maaltijd-,
+       boodschappen- en sessie-checkboxes staan in eigen labels en bleven daardoor
+       visueel leeg na aanvinken. Teken het vinkje overal. */
+    #fitJourneyApp .form-check-input[type="checkbox"]:checked {
+      border-color: var(--primary);
+      background-color: var(--primary);
+    }
+    #fitJourneyApp .form-check-input[type="checkbox"]:checked::before {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--primary-foreground);
+      content: "";
+      -webkit-mask: var(--checkmark-image) center / 12px 12px no-repeat;
+      mask: var(--checkmark-image) center / 12px 12px no-repeat;
+    }
     /* Zichtbare focus voor de "Back-up importeren"-label-knop (sr-only file-input ernaast). */
     #fitJourneyApp label.btn:has(+ input.sr-only:focus-visible) {
       outline: 2px solid var(--ring);
