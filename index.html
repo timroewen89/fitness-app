@@ -699,6 +699,34 @@ svg {
     #fitJourneyApp .session-previous {
       margin: .4rem 0 0;
     }
+    #fitJourneyApp .exercise-guide {
+      margin-top: .35rem;
+      font-size: var(--font-size-small);
+      line-height: var(--line-height-small);
+    }
+    #fitJourneyApp .exercise-guide summary {
+      cursor: pointer;
+      color: var(--accent-foreground);
+      font-weight: var(--font-weight-medium);
+      width: max-content;
+    }
+    #fitJourneyApp .exercise-guide[open] summary {
+      margin-bottom: .3rem;
+    }
+    #fitJourneyApp .exercise-steps {
+      margin: 0 0 .35rem;
+      padding-left: 1.1rem;
+      display: grid;
+      gap: .2rem;
+    }
+    #fitJourneyApp .exercise-caution {
+      margin: 0 0 .35rem;
+      color: var(--muted-foreground);
+    }
+    #fitJourneyApp .exercise-video-link {
+      display: inline-block;
+      margin-bottom: .2rem;
+    }
     #fitJourneyApp .session-actions .rest-duration {
       order: 2;
       margin: 0;
