@@ -122,3 +122,43 @@ test("weekcheck accepteert geen toekomstdatum", async ({ page }) => {
   const iso = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   expect(max).toBe(iso);
 });
+
+test("streak-statistiek staat op het dashboard", async ({ page }) => {
+  await expect(page.locator("#dashboardStats")).toContainText("Weekstreak");
+});
+
+test("vorige-keer-hint verschijnt bij een tweede sessie van dezelfde training", async ({ page }) => {
+  // Eerste sessie: waarden loggen en afronden
+  await page.click('[data-nav="training"]');
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  const firstInput = page.locator('[data-session-log][data-log-field="sets"]:visible').first();
+  await firstInput.fill("3");
+  const exerciseIndex = await firstInput.getAttribute("data-session-log");
+  await page.locator(`[data-session-check="${exerciseIndex}"]`).check();
+  page.once("dialog", dialog => dialog.accept());
+  await page.click("#completeWorkout");
+  // Tweede sessie van dezelfde training: hint met de vorige waarden
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  await expect(page.locator(".session-previous").first()).toContainText("Vorige keer");
+});
+
+test("back-upherinnering verschijnt bij data zonder back-up en is te snoozen", async ({ page }) => {
+  // Vers profiel zonder logboek: geen herinnering
+  await expect(page.locator("#backupReminder")).toBeHidden();
+  // Simuleer voldoende historie zonder back-up
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("momentum-fitness-v1") || "{}");
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    state.profile = state.profile || {};
+    state.weights = state.weights && state.weights.length ? state.weights : [{ date: today, value: 87.5 }];
+    state.completions = state.completions || {};
+    state.kneeChecks = [1, 2, 3].map(i => ({ id: String(i), date: new Date().toISOString(), day: today, before: 1, during: 1, after: 1 }));
+    localStorage.setItem("momentum-fitness-v1", JSON.stringify(state));
+  });
+  await page.reload();
+  await page.click('[data-nav="dashboard"]');
+  await expect(page.locator("#backupReminder .backup-reminder")).toBeVisible();
+  // Snoozen verbergt de herinnering
+  await page.click("[data-backup-later]");
+  await expect(page.locator("#backupReminder")).toBeHidden();
+});

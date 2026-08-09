@@ -692,6 +692,13 @@ svg {
       --fit-gap: 1rem;
       color: var(--foreground);
     }
+    #fitJourneyApp .backup-reminder {
+      border-left: 4px solid var(--primary);
+      margin-bottom: 1rem;
+    }
+    #fitJourneyApp .session-previous {
+      margin: .4rem 0 0;
+    }
     #fitJourneyApp * { box-sizing: border-box; }
     #fitJourneyApp .app-shell {
       max-width: 1080px;
@@ -1268,6 +1275,7 @@ svg {
 
     <main>
       <section class="view" data-view="dashboard">
+        <div id="backupReminder" hidden></div>
         <div class="stats-grid" id="dashboardStats"></div>
         <div class="section-head">
           <div><h2>Jouw volgende stap</h2><p id="weekContext"></p></div>
