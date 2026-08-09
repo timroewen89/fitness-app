@@ -699,6 +699,13 @@ svg {
     #fitJourneyApp .session-previous {
       margin: .4rem 0 0;
     }
+    #fitJourneyApp .session-actions .rest-duration {
+      order: 2;
+      margin: 0;
+    }
+    #fitJourneyApp .session-actions .rest-duration .form-select {
+      width: auto;
+    }
     #fitJourneyApp * { box-sizing: border-box; }
     #fitJourneyApp .app-shell {
       max-width: 1080px;
@@ -1276,6 +1283,7 @@ svg {
     <main>
       <section class="view" data-view="dashboard">
         <div id="backupReminder" hidden></div>
+        <div id="kneeTrendWarning" hidden></div>
         <div class="stats-grid" id="dashboardStats"></div>
         <div class="section-head">
           <div><h2>Jouw volgende stap</h2><p id="weekContext"></p></div>
@@ -1365,6 +1373,7 @@ svg {
             <p class="callout text-small">Gewichten zijn onbereid, behalve waar “uitgelekt” staat; rijst, pasta en couscous worden droog gewogen. Calorieën blijven praktische schattingen.</p>
           </div>
           <div class="day-tabs" id="mealDayTabs" role="group" aria-label="Dagen van het voedingsschema"></div>
+          <div class="viz-controls" id="mealSwapControls"></div>
           <div class="content-grid">
             <article class="card" id="mealPlanCard"></article>
             <aside class="card" id="nutritionSummary"></aside>
@@ -1376,6 +1385,7 @@ svg {
               <div><h3>Eigen voeding</h3><p>Voeg toe wat je werkelijk hebt gegeten of gedronken.</p></div>
               <button class="btn" type="button" id="openCustomFood"><i data-lucide="plus" aria-hidden="true"></i>Voeding toevoegen</button>
             </div>
+            <div class="viz-controls" id="quickFoodButtons" hidden></div>
             <form class="card custom-food-form" id="customFoodForm" hidden>
               <h3 id="customFoodHeading">Voeding toevoegen</h3>
               <input id="customFoodEditId" type="hidden">
@@ -1521,6 +1531,8 @@ svg {
           <article class="card"><h3>Conditieminuten</h3><div class="chart-wrap" id="cardioChartHost"></div></article>
         </div>
         <article class="card"><h3>Knieklachten na trainingen</h3><div class="chart-wrap" id="kneeTrendChartHost"></div></article>
+        <div class="section-head"><div><h3>Weekrapporten</h3><p>Per programmaweek: trainingen, ervaren zwaarte, kniebelasting en gewicht.</p></div></div>
+        <div class="card"><ul class="history-list" id="weeklyReports"></ul></div>
       </section>
 
       <section class="view" data-view="settings" hidden>

@@ -272,7 +272,9 @@
         pendingCalories: null,
         activeSession: null,
         lastBackupAt: null,
-        backupSnoozeUntil: null
+        backupSnoozeUntil: null,
+        restDuration: 60,
+        mealPlanOrder: [0, 1, 2, 3, 4, 5, 6]
       };
 
       var state = loadState();
@@ -369,6 +371,10 @@
         if (VIEW_NAMES.indexOf(merged.selectedView) === -1) merged.selectedView = "dashboard";
         if (!isIsoDay(merged.lastBackupAt)) merged.lastBackupAt = null;
         if (!isIsoDay(merged.backupSnoozeUntil)) merged.backupSnoozeUntil = null;
+        merged.restDuration = Math.min(300, Math.max(30, Math.round(safeNumber(merged.restDuration, 60))));
+        var order = Array.isArray(merged.mealPlanOrder) ? merged.mealPlanOrder.map(function (value) { return Math.round(safeNumber(value, -1)); }) : [];
+        var isPermutation = order.length === 7 && order.slice().sort().join(",") === "0,1,2,3,4,5,6";
+        merged.mealPlanOrder = isPermutation ? order : [0, 1, 2, 3, 4, 5, 6];
         return merged;
       }
 
@@ -549,7 +555,7 @@
         nutrition: function () { renderNutrition(); },
         knee: function () { renderKneeHistory(); updateKneePreview(); },
         weekly: function () { renderWeeklyCheck(); },
-        progress: function () { renderWeight(); renderTrainingHistory(); renderProgressCharts(); },
+        progress: function () { renderWeight(); renderTrainingHistory(); renderProgressCharts(); renderWeeklyReports(); },
         settings: function () { renderProfile(); }
       };
       var dirtyViews = {};
@@ -629,7 +635,7 @@
         var key = mealLogKey(dayIndex);
         var eaten = state.mealLogs[key] || [];
         var replaced = replacedMealIndexes(dayIndex);
-        var totals = mealDays[dayIndex].map(function (meal, index) { return personalizedMeal(dayIndex, index, meal); }).reduce(function (acc, meal, index) {
+        var totals = menuForDay(dayIndex).map(function (meal, index) { return personalizedMeal(dayIndex, index, meal); }).reduce(function (acc, meal, index) {
           if (eaten.indexOf(index) !== -1 && replaced.indexOf(index) === -1) {
             acc.calories += meal[2];
             acc.protein += meal[3];
@@ -749,6 +755,15 @@
         return localIso(date);
       }
 
+      /* Het menu voor een dag, rekening houdend met geruilde dagmenu's. Ruilen is
+         altijd een permutatie, zodat de weekboodschappenlijst blijft kloppen. */
+      function menuForDay(dayIndex) {
+        var order = Array.isArray(state.mealPlanOrder) ? state.mealPlanOrder : [];
+        var mapped = Math.round(safeNumber(order[dayIndex], dayIndex));
+        if (mapped < 0 || mapped >= mealDays.length) mapped = dayIndex;
+        return mealDays[mapped];
+      }
+
       function mealLogKey(dayIndex) {
         return mealDateForDay(dayIndex) + "::" + dayIndex;
       }
@@ -761,6 +776,71 @@
 
       function renderDashboard() {
         preserveUiState(renderDashboardCore);
+      }
+
+      function kneePainTrend() {
+        var points = state.workoutHistory
+          .map(function (record) { return { day: record.day || String(record.date || "").slice(0, 10), pain: safeNumber(record.kneePain, null) }; })
+          .filter(function (point) { return point.pain !== null; })
+          .sort(function (a, b) { return a.day.localeCompare(b.day); })
+          .slice(-3);
+        if (points.length < 3) return null;
+        var rising = points[0].pain < points[1].pain && points[1].pain < points[2].pain;
+        return rising ? points : null;
+      }
+
+      function renderWeeklyReports() {
+        var host = root.querySelector("#weeklyReports");
+        if (!host) return;
+        var position = programPositionForDay(currentTodayIso());
+        var absolute = (position.cycle - 1) * 12 + position.week;
+        var programStart = new Date(state.profile.startDate + "T12:00:00");
+        var items = [];
+        for (var k = absolute; k >= Math.max(1, absolute - 7); k--) {
+          var weekStart = new Date(programStart);
+          weekStart.setDate(weekStart.getDate() + (k - 1) * 7);
+          var weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          var startIso = localIso(weekStart);
+          var endIso = localIso(weekEnd);
+          var week = (k - 1) % 12 + 1;
+          var cycle = Math.floor((k - 1) / 12) + 1;
+          var sessions = state.workoutHistory.filter(function (record) {
+            var day = record.day || String(record.date || "").slice(0, 10);
+            return day >= startIso && day <= endIso;
+          });
+          var core = workouts.filter(function (workout) { return workout.type === "Vast" && isComplete(week, workout.id, cycle); }).length;
+          if (!sessions.length && !core && k !== absolute) continue;
+          var average = function (key) {
+            var values = sessions.map(function (record) { return safeNumber(record[key], null); }).filter(function (value) { return value !== null; });
+            if (!values.length) return null;
+            return values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
+          };
+          var rpe = average("rpe");
+          var pain = average("kneePain");
+          var weekWeights = state.weights.filter(function (entry) { return entry.date >= startIso && entry.date <= endIso; })
+            .sort(function (a, b) { return a.date.localeCompare(b.date); });
+          var weightDeltaWeek = weekWeights.length >= 2 ? weekWeights[weekWeights.length - 1].value - weekWeights[0].value : null;
+          var parts = ["trainingen " + core + "/3" + (sessions.length > core ? " (+" + (sessions.length - core) + " extra)" : "")];
+          if (rpe !== null) parts.push("gem. RPE " + rpe.toFixed(1).replace(".", ","));
+          if (pain !== null) parts.push("kniepijn " + pain.toFixed(1).replace(".", ",") + "/10");
+          if (weightDeltaWeek !== null) parts.push("gewicht " + (weightDeltaWeek > 0 ? "+" : "") + weightDeltaWeek.toFixed(1).replace(".", ",") + " kg");
+          items.push("<li class=\"history-item\"><div class=\"item-main\"><strong>Cyclus " + cycle + " \u00b7 week " + week + (k === absolute ? " (lopend)" : "") + "</strong><span class=\"text-small text-muted\">" +
+            formatDate(startIso) + " t/m " + formatDate(endIso) + " \u00b7 " + parts.join(" \u00b7 ") + "</span></div></li>");
+        }
+        host.innerHTML = items.length ? items.join("") : "<li class=\"empty-state\">Nog geen trainingsweken om samen te vatten.</li>";
+      }
+
+      function renderKneeTrendWarning() {
+        var host = root.querySelector("#kneeTrendWarning");
+        if (!host) return;
+        var trend = kneePainTrend();
+        host.hidden = !trend;
+        host.innerHTML = trend
+          ? "<div class=\"status-panel\" data-status=\"orange\"><strong>Je kniepijn loopt op</strong>De laatste drie trainingen steeg de pijn (" +
+            trend.map(function (point) { return point.pain; }).join(" \u2192 ") +
+            "). Overweeg de knievriendelijke alternatieven, verlaag de belasting en doe een kniecheck voordat je opbouwt.</div>"
+          : "";
       }
 
       function renderBackupReminder() {
@@ -779,6 +859,7 @@
 
       function renderDashboardCore() {
         renderBackupReminder();
+        renderKneeTrendWarning();
         var week = currentProgramWeek();
         var cycle = currentProgramCycle();
         var phase = trainingPlanFor(week);
@@ -843,7 +924,7 @@
         var options = Object.keys(trainingSchedules).map(function (key) {
           return "<option value=\"" + key + "\"" + (key === selectedKey ? " selected" : "") + ">" + escapeHtml(trainingSchedules[key].label) + "</option>";
         }).join("");
-        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p></article>";
+        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div><div class=\"toast\" id=\"calendarToast\" role=\"status\"></div></article>";
       }
 
       function latestWorkoutRecord(workoutId) {
@@ -1127,7 +1208,7 @@
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
           return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div>" + previousHint + "<div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
-        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Rust 60 sec</button><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
+        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
         updateSessionClocks();
       }
 
@@ -1147,16 +1228,51 @@
         if (toast) toast.textContent = message;
       }
 
+      /* Kort dubbel piepje bij het einde van de rust. De AudioContext wordt bij de
+         (gebruikers)klik op de rustknop aangemaakt/hervat, zoals iOS vereist. */
+      var restAudioContext = null;
+
+      function ensureRestAudio() {
+        try {
+          var Context = window.AudioContext || window.webkitAudioContext;
+          if (!Context) return;
+          restAudioContext = restAudioContext || new Context();
+          if (restAudioContext.state === "suspended") restAudioContext.resume();
+        } catch (error) { restAudioContext = null; }
+      }
+
+      function playRestEndSignal() {
+        if (!restAudioContext || restAudioContext.state !== "running") return;
+        try {
+          [0, 0.25].forEach(function (offset) {
+            var oscillator = restAudioContext.createOscillator();
+            var gain = restAudioContext.createGain();
+            var start = restAudioContext.currentTime + offset;
+            oscillator.type = "sine";
+            oscillator.frequency.value = 880;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+            oscillator.connect(gain).connect(restAudioContext.destination);
+            oscillator.start(start);
+            oscillator.stop(start + 0.2);
+          });
+        } catch (error) { /* geluid is nice-to-have */ }
+      }
+
       function startRest() {
         clearInterval(restTicker);
-        restSeconds = 60;
+        ensureRestAudio();
+        restSeconds = Math.min(300, Math.max(30, Math.round(safeNumber(state.restDuration, 60))));
         updateSessionClocks();
-        announceRest("Rustpauze gestart: 60 seconden.");
+        announceRest("Rustpauze gestart: " + restSeconds + " seconden.");
         restTicker = setInterval(function () {
           restSeconds -= 1;
           if (restSeconds <= 0) {
             restSeconds = 0;
             clearInterval(restTicker);
+            playRestEndSignal();
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
             announceRest("Rustpauze voorbij.");
           }
           updateSessionClocks();
@@ -1237,7 +1353,7 @@
           select.innerHTML = "<option value=\"\">Kies eerst een geldige datum</option>";
           return;
         }
-        select.innerHTML = mealDays[dayIndex].map(function (meal, index) {
+        select.innerHTML = menuForDay(dayIndex).map(function (meal, index) {
           return "<option value=\"" + index + "\">" + escapeHtml(meal[0] + " — " + meal[1]) + "</option>";
         }).join("");
         if (safeNumber(preferredIndex, -1) >= 0) select.value = String(preferredIndex);
@@ -1299,7 +1415,7 @@
           return;
         }
         var selectedDay = selectedMealDayForDate(day);
-        if (relation === "replace" && (selectedDay < 0 || replacedMealIndex < 0 || replacedMealIndex >= mealDays[selectedDay].length)) {
+        if (relation === "replace" && (selectedDay < 0 || replacedMealIndex < 0 || replacedMealIndex >= menuForDay(selectedDay).length)) {
           showToast("customFoodToast", "Kies welk menu-item deze invoer vervangt.", true);
           return;
         }
@@ -1345,13 +1461,16 @@
       }
 
       function deleteCustomFood(id) {
-        var entry = state.customFoodLogs.find(function (item) { return item.id === id; });
-        if (!entry || !window.confirm("Deze voedingsinvoer verwijderen?")) return;
-        state.customFoodLogs = state.customFoodLogs.filter(function (item) { return item.id !== id; });
+        var index = state.customFoodLogs.findIndex(function (item) { return item.id === id; });
+        if (index < 0) return;
+        var entry = state.customFoodLogs[index];
+        state.customFoodLogs.splice(index, 1);
         saveState();
         renderNutrition();
         refreshView("dashboard");
-        showToast("customFoodSectionToast", "Voedingsinvoer verwijderd.");
+        offerUndo("customFoodSectionToast", "Voedingsinvoer verwijderd.", function () {
+          state.customFoodLogs.splice(index, 0, entry);
+        });
       }
 
       function renderCustomFoodHistory(day) {
@@ -1429,10 +1548,16 @@
         root.querySelector("#mealDayTabs").innerHTML = dayNames.map(function (day, index) {
           return "<button class=\"btn\" type=\"button\" aria-pressed=\"" + (index === selected ? "true" : "false") + "\" data-meal-day=\"" + index + "\">" + day + "</button>";
         }).join("");
+        var swapHost = root.querySelector("#mealSwapControls");
+        if (swapHost) {
+          swapHost.innerHTML = "<label class=\"form-label meal-swap\">Ruil het menu van " + dayLong[selected].toLowerCase() + " met<select class=\"form-select\" id=\"mealSwapSelect\"><option value=\"\">Kies een dag\u2026</option>" +
+            dayLong.map(function (day, index) { return index === selected ? "" : "<option value=\"" + index + "\">" + day + "</option>"; }).join("") +
+            "</select></label>";
+        }
         var key = mealLogKey(selected);
         var eaten = state.mealLogs[key] || [];
         var replaced = replacedMealIndexes(selected);
-        var meals = mealDays[selected].map(function (meal, index) { return personalizedMeal(selected, index, meal); });
+        var meals = menuForDay(selected).map(function (meal, index) { return personalizedMeal(selected, index, meal); });
         root.querySelector("#mealPlanCard").innerHTML = "<div class=\"section-head\"><div><h3>" + dayLong[selected] + "</h3><p>" + formatDate(mealDateForDay(selected), { day: "numeric", month: "long" }) + "</p></div><span class=\"viz-badge\">Doel " + state.profile.calories + " kcal</span></div><ul class=\"meal-list\">" + meals.map(function (meal, index) {
           var isReplaced = replaced.indexOf(index) !== -1;
           var checked = eaten.indexOf(index) !== -1 && !isReplaced;
@@ -1447,6 +1572,31 @@
         root.querySelector("#nutritionSummary").innerHTML = "<h3>Dagtotaal</h3><div class=\"metric-pair\"><span>Menu gepland</span><strong>" + totals.plannedCalories + " kcal</strong></div><div class=\"metric-pair\"><span>Gepland eiwit</span><strong>" + totals.plannedProtein + " g</strong></div><div class=\"metric-pair\"><span>Eigen invoer</span><strong>" + totals.customCalories + " kcal · " + customProteinText + " g</strong></div><div class=\"macro-bars\"><div class=\"metric-pair\"><span>Geregistreerd</span><strong>" + totals.calories + " / " + state.profile.calories + " kcal</strong></div><div class=\"progress-track\"><div class=\"progress-fill\" style=\"width:" + kcalPct + "%\"></div></div><div class=\"metric-pair\"><span>Eiwit</span><strong>" + proteinText + " / " + state.profile.protein + " g</strong></div><div class=\"progress-track\"><div class=\"progress-fill\" style=\"width:" + proteinPct + "%\"></div></div></div><p class=\"text-small text-muted\">Afgevinkte menu-items plus eigen voeding; een vervangen menu-item wordt niet dubbel geteld.</p><p class=\"callout text-small\">Bij een lager caloriedoel blijven de eiwitporties behouden; vooral graan-, aardappel- en vetporties worden aangepast.</p>";
         renderNutritionQuality(totals, mealDateForDay(selected));
         renderCustomFoodHistory(mealDateForDay(selected));
+        renderQuickFood();
+      }
+
+      /* Snelkeuze: de vijf vaakst gelogde eigen voedingsitems als één-tik-knoppen. */
+      function renderQuickFood() {
+        var host = root.querySelector("#quickFoodButtons");
+        if (!host) return;
+        var counts = {};
+        state.customFoodLogs.forEach(function (entry) {
+          if (!entry || !entry.name) return;
+          var key = String(entry.name).trim().toLowerCase();
+          if (!key) return;
+          if (!counts[key]) counts[key] = { count: 0, latest: entry };
+          counts[key].count += 1;
+          counts[key].latest = entry;
+        });
+        var top = Object.keys(counts)
+          .sort(function (a, b) { return counts[b].count - counts[a].count; })
+          .slice(0, 5);
+        host.hidden = !top.length;
+        host.innerHTML = top.length
+          ? "<span class=\"text-small text-muted\">Snel toevoegen:</span>" + top.map(function (key) {
+              return "<button class=\"btn\" type=\"button\" data-quick-food=\"" + escapeHtml(counts[key].latest.id) + "\">" + escapeHtml(counts[key].latest.name) + "</button>";
+            }).join("")
+          : "";
       }
 
       function renderShoppingList() {
@@ -1562,12 +1712,17 @@
       }
 
       function deleteKneeCheck(identifier) {
-        if (!window.confirm("Deze kniecheck verwijderen?")) return;
-        state.kneeChecks = state.kneeChecks.filter(function (check) { return String(check.id || check.date) !== identifier; });
+        var index = state.kneeChecks.findIndex(function (check) { return String(check.id || check.date) === identifier; });
+        if (index < 0) return;
+        var check = state.kneeChecks[index];
+        state.kneeChecks.splice(index, 1);
         saveState();
         renderKneeHistory();
         renderProgressCharts();
-        showToast("kneeToast", "Kniecheck verwijderd.");
+        refreshView("dashboard");
+        offerUndo("kneeToast", "Kniecheck verwijderd.", function () {
+          state.kneeChecks.splice(index, 0, check);
+        });
       }
 
       function sortedWeights() {
@@ -1651,12 +1806,16 @@
           showToast("weightToast", "Bewaar minimaal één gewichtsmeting.", true);
           return;
         }
-        if (!window.confirm("Deze gewichtsmeting verwijderen?")) return;
-        state.weights = state.weights.filter(function (entry) { return entry.date !== date; });
+        var index = state.weights.findIndex(function (entry) { return entry.date === date; });
+        if (index < 0) return;
+        var entry = state.weights[index];
+        state.weights.splice(index, 1);
         saveState();
         renderWeight();
         refreshView("dashboard");
-        showToast("weightToast", "Meting verwijderd.");
+        offerUndo("weightToast", "Meting verwijderd.", function () {
+          state.weights.splice(index, 0, entry);
+        });
       }
 
       function renderTrainingHistory() {
@@ -1731,8 +1890,9 @@
 
       function deleteWorkoutRecord(id) {
         var index = state.workoutHistory.findIndex(function (item) { return item.id === id; });
-        if (index < 0 || !window.confirm("Deze training definitief verwijderen?")) return;
+        if (index < 0) return;
         var record = state.workoutHistory[index];
+        var completionsSnapshot = JSON.parse(JSON.stringify(state.completions));
         state.workoutHistory.splice(index, 1);
         rebuildCompletionAfterDelete(record);
         saveState();
@@ -1741,6 +1901,10 @@
         renderProgressCharts();
         refreshView("dashboard");
         refreshView("training");
+        offerUndo("workoutEditToast", "Training verwijderd.", function () {
+          state.workoutHistory.splice(index, 0, record);
+          state.completions = completionsSnapshot;
+        });
       }
 
       function trendChart(points, label, unit, maxValue) {
@@ -1968,8 +2132,12 @@
       }
 
       function deleteWeeklyCheck(day) {
-        if (!window.confirm("Deze weekcheck verwijderen?")) return;
-        state.weeklyCheckins = state.weeklyCheckins.filter(function (item) { return item.day !== day; });
+        var index = state.weeklyCheckins.findIndex(function (item) { return item.day === day; });
+        if (index < 0) return;
+        var removed = state.weeklyCheckins[index];
+        var pendingSnapshot = state.pendingCalories ? JSON.parse(JSON.stringify(state.pendingCalories)) : null;
+        var coachingSnapshot = JSON.parse(JSON.stringify(state.coaching));
+        state.weeklyCheckins.splice(index, 1);
         if (state.pendingCalories && state.pendingCalories.day === day) state.pendingCalories = null;
         var latest = state.weeklyCheckins.slice().sort(function (a, b) { return a.day.localeCompare(b.day); }).slice(-1)[0];
         if (latest) {
@@ -1979,7 +2147,11 @@
         }
         saveState();
         renderAll();
-        showToast("weeklyToast", "Weekcheck verwijderd.");
+        offerUndo("weeklyToast", "Weekcheck verwijderd.", function () {
+          state.weeklyCheckins.splice(index, 0, removed);
+          state.pendingCalories = pendingSnapshot;
+          state.coaching = coachingSnapshot;
+        });
       }
 
       function saveWeeklyCheck(event) {
@@ -2095,6 +2267,48 @@
         }).then(function (plain) {
           return new TextDecoder().decode(plain);
         });
+      }
+
+      /* Agenda-export: wekelijks terugkerende hele-dag-afspraken voor de vaste
+         trainingsdagen (12 weken), volledig client-side als .ics-download. */
+      var DAY_NAME_TO_ICS = { "Maandag": ["MO", 1], "Dinsdag": ["TU", 2], "Woensdag": ["WE", 3], "Donderdag": ["TH", 4], "Vrijdag": ["FR", 5], "Zaterdag": ["SA", 6], "Zondag": ["SU", 0] };
+
+      function exportTrainingCalendar() {
+        var schedule = trainingSchedules[state.trainingSchedule] || trainingSchedules[defaultState.trainingSchedule];
+        var todayStamp = currentTodayIso().replace(/-/g, "");
+        var events = schedule.days.map(function (dayName, position) {
+          var target = DAY_NAME_TO_ICS[dayName];
+          if (!target) return "";
+          var date = new Date(currentTodayIso() + "T12:00:00");
+          while (date.getDay() !== target[1]) date.setDate(date.getDate() + 1);
+          var startDate = localIso(date).replace(/-/g, "");
+          var endDate = localIso(new Date(date.getTime() + 86400000)).replace(/-/g, "");
+          return [
+            "BEGIN:VEVENT",
+            "UID:momentum-training-" + position + "-" + startDate + "@momentum-fitness",
+            "DTSTAMP:" + todayStamp + "T000000Z",
+            "DTSTART;VALUE=DATE:" + startDate,
+            "DTEND;VALUE=DATE:" + endDate,
+            "RRULE:FREQ=WEEKLY;BYDAY=" + target[0] + ";COUNT=12",
+            "SUMMARY:Momentum training",
+            "DESCRIPTION:Vaste trainingsdag (" + dayName + ") uit je Momentum-schema.",
+            "END:VEVENT"
+          ].join("\r\n");
+        }).filter(Boolean);
+        var calendar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Momentum Fitness Tracker//NL", "CALSCALE:GREGORIAN"]
+          .concat(events)
+          .concat(["END:VCALENDAR"])
+          .join("\r\n");
+        var blob = new Blob([calendar], { type: "text/calendar" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "momentum-trainingen.ics";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast("calendarToast", "Agenda-bestand gedownload. Open het om de 12 trainingsweken toe te voegen.");
       }
 
       function exportData() {
@@ -2234,6 +2448,26 @@
         showToast("dataToast", "Alle gegevens zijn gewist.");
       }
 
+      /* "Ongedaan maken" in plaats van een blokkerende confirm bij verwijderen.
+         De teruggeefactie blijft 8 seconden beschikbaar in de betreffende toast. */
+      var pendingUndo = null;
+      var undoTimer = null;
+
+      function offerUndo(toastId, message, restore) {
+        pendingUndo = { toastId: toastId, restore: restore };
+        clearTimeout(undoTimer);
+        var element = root.querySelector("#" + toastId);
+        if (element) {
+          element.classList.remove("text-destructive");
+          element.innerHTML = escapeHtml(message) + " <button class=\"btn undo-btn\" type=\"button\" data-undo>Ongedaan maken</button>";
+        }
+        undoTimer = setTimeout(function () {
+          pendingUndo = null;
+          var current = root.querySelector("#" + toastId);
+          if (current && current.querySelector("[data-undo]")) current.innerHTML = "";
+        }, 8000);
+      }
+
       function showToast(id, message, destructive) {
         var element = root.querySelector("#" + id);
         if (!element) return;
@@ -2282,6 +2516,22 @@
         if (event.target.closest("#openManualWorkout")) { openManualWorkoutForm(); return; }
         if (event.target.closest("#cancelManualWorkout")) { closeManualWorkoutForm(); return; }
         if (event.target.closest("#openCustomFood")) { openCustomFoodForm(); return; }
+        var quickFood = event.target.closest("[data-quick-food]");
+        if (quickFood) {
+          var quickEntry = state.customFoodLogs.find(function (item) { return item.id === quickFood.dataset.quickFood; });
+          if (quickEntry) {
+            openCustomFoodForm();
+            root.querySelector("#customFoodMoment").value = quickEntry.moment || "Ontbijt";
+            root.querySelector("#customFoodName").value = quickEntry.name || "";
+            root.querySelector("#customFoodAmount").value = quickEntry.amount || "";
+            root.querySelector("#customFoodCalories").value = safeNumber(quickEntry.calories, "");
+            root.querySelector("#customFoodProtein").value = safeNumber(quickEntry.protein, "");
+            root.querySelector("#customFoodFiber").value = quickEntry.fiber === undefined || quickEntry.fiber === null ? "" : quickEntry.fiber;
+            root.querySelector("#customFoodVegetables").value = quickEntry.vegetables === undefined || quickEntry.vegetables === null ? "" : quickEntry.vegetables;
+            root.querySelector("#customFoodFruit").value = quickEntry.fruit === undefined || quickEntry.fruit === null ? "" : quickEntry.fruit;
+          }
+          return;
+        }
         if (event.target.closest("#cancelCustomFood")) { closeCustomFoodForm(); return; }
         var editFoodButton = event.target.closest("[data-edit-food]");
         if (editFoodButton) { editCustomFood(editFoodButton.dataset.editFood); return; }
@@ -2293,6 +2543,19 @@
         if (nav) { showView(nav.dataset.nav); return; }
         var start = event.target.closest("[data-start-workout]");
         if (start) { startWorkout(start.dataset.startWorkout, safeNumber(start.dataset.week, state.selectedWeek)); return; }
+        if (event.target.closest("[data-undo]")) {
+          if (pendingUndo) {
+            var undo = pendingUndo;
+            pendingUndo = null;
+            clearTimeout(undoTimer);
+            undo.restore();
+            saveState();
+            renderAll();
+            showToast(undo.toastId, "Teruggezet.");
+          }
+          return;
+        }
+        if (event.target.closest("#exportCalendar")) { exportTrainingCalendar(); return; }
         if (event.target.closest("[data-backup-now]")) { showView("settings"); return; }
         if (event.target.closest("[data-backup-later]")) {
           var snoozeUntil = new Date(currentTodayIso() + "T12:00:00");
@@ -2348,6 +2611,29 @@
       root.addEventListener("change", function (event) {
         if (event.target.id === "customFoodRelation" || event.target.id === "customFoodDate") {
           updateCustomFoodReplaceOptions(root.querySelector("#customFoodReplaceMeal").value);
+          return;
+        }
+        if (event.target.id === "mealSwapSelect") {
+          var swapWith = Math.round(safeNumber(event.target.value, -1));
+          if (swapWith < 0 || swapWith > 6 || swapWith === state.selectedMealDay) { event.target.value = ""; return; }
+          if (!window.confirm("Dagmenu's ruilen? Afgevinkte maaltijden van beide dagen worden gewist.")) { event.target.value = ""; return; }
+          var order = state.mealPlanOrder.slice();
+          var current = state.selectedMealDay;
+          var swap = order[current];
+          order[current] = order[swapWith];
+          order[swapWith] = swap;
+          state.mealPlanOrder = order;
+          delete state.mealLogs[mealLogKey(current)];
+          delete state.mealLogs[mealLogKey(swapWith)];
+          saveState();
+          renderNutrition();
+          refreshView("dashboard");
+          showToast("nutritionQualityToast", "Menu's van " + dayLong[current].toLowerCase() + " en " + dayLong[swapWith].toLowerCase() + " geruild.");
+          return;
+        }
+        if (event.target.id === "restDurationSelect") {
+          state.restDuration = Math.min(300, Math.max(30, Math.round(safeNumber(event.target.value, 60))));
+          saveState();
           return;
         }
         if (event.target.id === "trainingScheduleSelect") {
