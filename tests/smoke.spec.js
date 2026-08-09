@@ -214,3 +214,17 @@ test("dagmenu's ruilen wisselt de menu-inhoud", async ({ page }) => {
   const after = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
   expect(after).not.toBe(before);
 });
+
+test("oefeningen hebben uitklapbare uitvoeringsinstructies met YouTube-link", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  // De oefeninglijst zit zelf in een "Bekijk oefeningen"-uitklapper
+  await page.locator('[data-view="training"] details:has(.exercise-guide) > summary').first().click();
+  const guide = page.locator('[data-view="training"] .exercise-guide').first();
+  await guide.locator("summary").click();
+  await expect(guide.locator(".exercise-steps li").first()).toBeVisible();
+  const href = await guide.locator(".exercise-video-link").getAttribute("href");
+  expect(href).toContain("youtube.com/results");
+  // Ook in een actieve sessie beschikbaar
+  await page.locator('[data-view="training"] [data-start-workout]:visible').first().click();
+  await expect(page.locator(".session-block .exercise-guide").first()).toBeAttached();
+});
