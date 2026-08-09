@@ -396,7 +396,11 @@
         var merged = Object.assign({}, defaultState, saved);
           merged.profile = Object.assign({}, defaultState.profile, saved.profile || {});
           merged.completions = saved.completions || {};
-          merged.mealLogs = saved.mealLogs || {};
+          merged.mealLogs = {};
+        var savedMealLogs = saved.mealLogs && typeof saved.mealLogs === "object" ? saved.mealLogs : {};
+        Object.keys(savedMealLogs).forEach(function (key) {
+          if (Array.isArray(savedMealLogs[key])) merged.mealLogs[key] = savedMealLogs[key].map(function (value) { return Math.round(Number(value)); }).filter(Number.isFinite);
+        });
           merged.customFoodLogs = Array.isArray(saved.customFoodLogs) ? saved.customFoodLogs : [];
           merged.waterLogs = saved.waterLogs && typeof saved.waterLogs === "object" ? saved.waterLogs : {};
           merged.shoppingChecks = saved.shoppingChecks || {};
@@ -513,7 +517,7 @@
 
       /* Behoud focus en open <details>-elementen over volledige innerHTML-rebuilds heen,
          zodat toetsenbord- en VoiceOver-gebruikers hun positie niet verliezen bij elk vinkje. */
-      var UI_STATE_ATTRS = ["data-meal-check", "data-shopping-check", "data-meal-day", "data-nutrition-mode", "data-session-check", "data-session-log", "data-session-alternative", "data-start-workout", "data-edit-food", "data-delete-food"];
+      var UI_STATE_ATTRS = ["data-meal-check", "data-shopping-check", "data-meal-day", "data-nutrition-mode", "data-session-check", "data-session-log", "data-session-alternative", "data-start-workout", "data-edit-food", "data-delete-food", "data-quick-food"];
 
       function uiFocusKeyFor(element) {
         if (!element || element === document.body) return null;
@@ -685,10 +689,10 @@
         var meal = sourceMeal.slice();
         var settings = state.nutritionSettings || defaultState.nutritionSettings;
         var scale = nutritionScale();
-        if (dayIndex === 5 && mealIndex === 3) {
+        if (menuIndexForDay(dayIndex) === 5 && mealIndex === 3) {
           meal[1] = settings.saturdayProtein === "vega" ? "200 g vegetarische stukjes, 350 g aardappelen, 300 g groenten en 10 g olijfolie" : "100 g biefstuk, 350 g aardappelen, 300 g groenten en 10 g olijfolie";
         }
-        if (dayIndex === 6 && mealIndex === 3) {
+        if (menuIndexForDay(dayIndex) === 6 && mealIndex === 3) {
           meal[1] = (settings.sundayProtein === "tofu" ? "200 g tofu" : "150 g kipfilet") + ", 150 g kikkererwten (uitgelekt), 75 g zilvervliesrijst (droog), 300 g groenten en 100 ml lichte kokosmelk";
         }
         meal[1] = scaleMealDescription(meal[1], scale, nutritionProteinScale());
@@ -747,11 +751,15 @@
 
       /* Het menu voor een dag, rekening houdend met geruilde dagmenu's. Ruilen is
          altijd een permutatie, zodat de weekboodschappenlijst blijft kloppen. */
-      function menuForDay(dayIndex) {
+      function menuIndexForDay(dayIndex) {
         var order = Array.isArray(state.mealPlanOrder) ? state.mealPlanOrder : [];
         var mapped = Math.round(safeNumber(order[dayIndex], dayIndex));
         if (mapped < 0 || mapped >= mealDays.length) mapped = dayIndex;
-        return mealDays[mapped];
+        return mapped;
+      }
+
+      function menuForDay(dayIndex) {
+        return mealDays[menuIndexForDay(dayIndex)];
       }
 
       function mealLogKey(dayIndex) {
@@ -813,9 +821,9 @@
           : "<p class=\"empty-state\">Nog geen metingen. De eerste meting hoort bij week 1.</p>";
         var nextWeek = FITNESS_TEST_WEEKS.filter(function (value) { return value > week; })[0];
         var form = isTestWeek
-          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
+          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" inputmode=\"numeric\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\" data-cycle=\"" + cycle + "\" data-week=\"" + week + "\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
           : "<p class=\"text-small text-muted\">Volgende meting in week " + (nextWeek || "1 van de volgende cyclus") + ".</p>";
-        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "<div class=\"toast\" id=\"fitnessTestToast\" role=\"status\"></div>";
+        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "";
       }
 
       function saveFitnessTest() {
@@ -825,7 +833,10 @@
           showToast("fitnessTestToast", "Vul een afstand tussen 200 en 20.000 meter in.", true);
           return;
         }
-        state.fitnessTests[fitnessTestKey(currentProgramCycle(), currentProgramWeek())] = { day: currentTodayIso(), distance: distance };
+        var button = root.querySelector("#saveFitnessTest");
+        var cycle = Math.max(1, Math.round(safeNumber(button && button.dataset.cycle, currentProgramCycle())));
+        var week = Math.min(12, Math.max(1, Math.round(safeNumber(button && button.dataset.week, currentProgramWeek()))));
+        state.fitnessTests[fitnessTestKey(cycle, week)] = { day: currentTodayIso(), distance: distance };
         saveState();
         renderFitnessTest();
         showToast("fitnessTestToast", "Conditiemeting opgeslagen.");
@@ -966,7 +977,7 @@
         var options = Object.keys(trainingSchedules).map(function (key) {
           return "<option value=\"" + key + "\"" + (key === selectedKey ? " selected" : "") + ">" + escapeHtml(trainingSchedules[key].label) + "</option>";
         }).join("");
-        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div><div class=\"toast\" id=\"calendarToast\" role=\"status\"></div></article>";
+        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div></article>";
       }
 
       function latestWorkoutRecord(workoutId) {
@@ -986,8 +997,13 @@
           var workout = workouts.find(function (item) { return item.id === record.workoutId; });
           if (!workout) return;
           workout.exercises(safeNumber(record.week, 1)).forEach(function (exercise, index) {
-            if (exercise[0] !== exerciseName || !record.logs[index]) return;
-            var weight = Number(record.logs[index].weight);
+            var log = record.logs[index];
+            if (!log) return;
+            /* Match op de werkelijk uitgevoerde oefening: een gewicht dat op een
+               alternatief is gelogd telt niet als record van de geplande oefening. */
+            var performedName = log.alternative || exercise[0];
+            if (performedName !== exerciseName) return;
+            var weight = Number(log.weight);
             if (Number.isFinite(weight) && weight > 0 && (best === null || weight > best)) best = weight;
           });
         });
@@ -1000,8 +1016,8 @@
         var records = [];
         Object.keys(logs).forEach(function (key) {
           var index = Math.round(safeNumber(key, -1));
-          var name = names[index];
-          if (!name || logs[key].alternative) return;
+          var name = logs[key] && logs[key].alternative ? logs[key].alternative : names[index];
+          if (!name) return;
           var weight = Number(logs[key].weight);
           if (!Number.isFinite(weight) || weight <= 0) return;
           var best = bestWeightForExercise(name);
@@ -1017,9 +1033,13 @@
           var record = state.workoutHistory[i];
           if (record.workoutId !== workoutId || record.manual === true || !record.logs) continue;
           var names = workout.exercises(safeNumber(record.week, 1)).map(function (item) { return item[0]; });
-          var index = names.indexOf(exerciseName);
-          if (index === -1 || !record.logs[index]) continue;
-          var log = record.logs[index];
+          var log = null;
+          for (var position = 0; position < names.length; position++) {
+            var candidate = record.logs[position];
+            if (!candidate) continue;
+            if ((candidate.alternative || names[position]) === exerciseName) { log = candidate; break; }
+          }
+          if (!log) continue;
           var hasValue = Object.keys(log).some(function (key) {
             return key !== "alternative" && String(log[key]).trim() !== "";
           });
@@ -1248,9 +1268,9 @@
         if (!workout) return;
         clearInterval(sessionTicker);
         clearInterval(restTicker);
-        var previous = latestWorkoutRecord(id);
-        var previousLogs = previous && previous.logs ? JSON.parse(JSON.stringify(previous.logs)) : {};
-        activeSession = { workoutId: id, week: week, cycle: currentProgramCycle(), startedAt: Date.now(), checked: [], logs: previousLogs, rpe: 6, kneePain: 0 };
+        /* Vorige waarden niet voorvullen (dat logde oude prestaties opnieuw als
+           je alleen afvinkte); de "Vorige keer"-hint en placeholders tonen ze wel. */
+        activeSession = { workoutId: id, week: week, cycle: currentProgramCycle(), startedAt: Date.now(), checked: [], logs: {}, rpe: 6, kneePain: 0 };
         restSeconds = 0;
         restEndsAt = 0;
         restSignalled = true;
@@ -1282,17 +1302,18 @@
         host.innerHTML = "<article class=\"card active-session\"><span class=\"viz-badge\">Training actief</span><h3>" + escapeHtml(workout.title) + "</h3><div class=\"session-clock\" id=\"sessionClock\">00:00</div><p class=\"text-small text-muted\">Vink iedere oefening af en registreer je werkelijke prestatie. Waarde 0 kg betekent lichaamsgewicht.</p><div>" + exercises.map(function (exercise, index) {
           var checked = activeSession.checked.indexOf(index) !== -1;
           var log = activeSession.logs[index] || {};
-          var fields = exerciseFields(exercise).map(function (field) {
-            var value = log[field[0]] === undefined ? "" : log[field[0]];
-            return "<label class=\"form-label\">" + field[1] + "<input class=\"form-control\" type=\"number\" min=\"0\" step=\"" + field[2] + "\" value=\"" + escapeHtml(value) + "\" data-session-log=\"" + index + "\" data-log-field=\"" + field[0] + "\"></label>";
-          }).join("");
           var previous = previousLogForExercise(activeSession.workoutId, exercise[0]);
           var previousText = previous ? formatPreviousLog(exercise, previous.log) : "";
           var previousHint = previousText ? "<p class=\"text-small text-muted session-previous\">Vorige keer (" + formatDate(previous.day) + "): " + escapeHtml(previousText) + "</p>" : "";
+          var fields = exerciseFields(exercise).map(function (field) {
+            var value = log[field[0]] === undefined ? "" : log[field[0]];
+            var hintValue = previous && previous.log[field[0]] !== undefined ? String(previous.log[field[0]]) : "";
+            return "<label class=\"form-label\">" + field[1] + "<input class=\"form-control\" type=\"number\" min=\"0\" step=\"" + field[2] + "\" placeholder=\"" + escapeHtml(hintValue) + "\" value=\"" + escapeHtml(value) + "\" data-session-log=\"" + index + "\" data-log-field=\"" + field[0] + "\"></label>";
+          }).join("");
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
           return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div>" + exerciseGuideHtml(log.alternative || exercise[0]) + previousHint + "<div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
-        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
+        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].concat([60, 90, 120].indexOf(state.restDuration) === -1 ? [state.restDuration] : []).sort(function (a, b) { return a - b; }).map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
         updateSessionClocks();
       }
 
@@ -1652,7 +1673,7 @@
         if (swapHost) {
           swapHost.innerHTML = "<label class=\"form-label meal-swap\">Ruil het menu van " + dayLong[selected].toLowerCase() + " met<select class=\"form-select\" id=\"mealSwapSelect\"><option value=\"\">Kies een dag\u2026</option>" +
             dayLong.map(function (day, index) { return index === selected ? "" : "<option value=\"" + index + "\">" + day + "</option>"; }).join("") +
-            "</select></label>";
+            "</select></label><button class=\"btn\" type=\"button\" id=\"mealSwapButton\">Ruil menu's</button>";
         }
         var key = mealLogKey(selected);
         var eaten = state.mealLogs[key] || [];
@@ -1888,7 +1909,9 @@
         else state.weights.push({ date: date, value: value });
         saveState();
         renderWeight();
+        renderWeeklyReports();
         refreshView("dashboard");
+        refreshView("weekly");
         showToast("weightToast", "Meting opgeslagen.");
       }
 
@@ -1912,7 +1935,9 @@
         state.weights.splice(index, 1);
         saveState();
         renderWeight();
+        renderWeeklyReports();
         refreshView("dashboard");
+        refreshView("weekly");
         offerUndo("weightToast", "Meting verwijderd.", function () {
           state.weights.splice(index, 0, entry);
         });
@@ -1924,7 +1949,7 @@
           var status = record.manual ? "Handmatig" : (recordCountsForWeek(record) ? "Voltooid" : "Gedeeltelijk");
           var statusKey = record.manual ? "manual" : (recordCountsForWeek(record) ? "complete" : "partial");
           var exerciseSummary = record.manual && Array.isArray(record.exercises) ? "<span class=\"manual-exercise-summary text-small\">" + escapeHtml((record.manualType || "Gemengd") + " · " + record.exercises.join(" · ")) + "</span>" : "";
-          return "<tr><td class=\"text-nowrap\" data-label=\"Datum\">" + formatDate(record.day || String(record.date).slice(0, 10)) + "</td><td data-label=\"Training\"><div class=\"training-name\">" + escapeHtml(record.workoutTitle || record.workoutId) + "</div>" + exerciseSummary + " <span class=\"viz-badge training-status\" data-status=\"" + statusKey + "\">" + status + "</span>" + (record.prs && record.prs.length ? " <span class=\"viz-badge pr-badge\" title=\"" + escapeHtml(record.prs.join(", ")) + "\">PR</span>" : "") + "</td><td class=\"text-nowrap\" data-label=\"Duur\">" + safeNumber(record.duration, 0) + " min</td><td data-label=\"RPE\">" + safeNumber(record.rpe, 0) + "/10</td><td data-label=\"Advies\">" + escapeHtml(record.advice || workoutAdvice(record)) + "</td><td data-label=\"Acties\"><div class=\"card-actions\"><button class=\"btn\" type=\"button\" data-edit-workout=\"" + escapeHtml(record.id) + "\">Bewerk</button><button class=\"btn btn-danger\" type=\"button\" data-delete-workout=\"" + escapeHtml(record.id) + "\">Verwijder</button></div></td></tr>";
+          return "<tr><td class=\"text-nowrap\" data-label=\"Datum\">" + formatDate(record.day || String(record.date).slice(0, 10)) + "</td><td data-label=\"Training\"><div class=\"training-name\">" + escapeHtml(record.workoutTitle || record.workoutId) + "</div>" + exerciseSummary + " <span class=\"viz-badge training-status\" data-status=\"" + statusKey + "\">" + status + "</span>" + (record.prs && record.prs.length ? " <span class=\"viz-badge pr-badge\" role=\"img\" aria-label=\"Persoonlijk record: " + escapeHtml(record.prs.join(", ")) + "\">PR</span><span class=\"text-small pr-names\">Record: " + escapeHtml(record.prs.join(", ")) + "</span>" : "") + "</td><td class=\"text-nowrap\" data-label=\"Duur\">" + safeNumber(record.duration, 0) + " min</td><td data-label=\"RPE\">" + safeNumber(record.rpe, 0) + "/10</td><td data-label=\"Advies\">" + escapeHtml(record.advice || workoutAdvice(record)) + "</td><td data-label=\"Acties\"><div class=\"card-actions\"><button class=\"btn\" type=\"button\" data-edit-workout=\"" + escapeHtml(record.id) + "\">Bewerk</button><button class=\"btn btn-danger\" type=\"button\" data-delete-workout=\"" + escapeHtml(record.id) + "\">Verwijder</button></div></td></tr>";
         }).join("") : "<tr><td colspan=\"6\" class=\"text-muted\">Rond je eerste training af om hier prestaties te zien.</td></tr>";
       }
 
@@ -1984,6 +2009,7 @@
         root.querySelector("#workoutEditor").hidden = true;
         renderTrainingHistory();
         renderProgressCharts();
+        renderWeeklyReports();
         refreshView("dashboard");
         refreshView("training");
       }
@@ -1992,18 +2018,25 @@
         var index = state.workoutHistory.findIndex(function (item) { return item.id === id; });
         if (index < 0) return;
         var record = state.workoutHistory[index];
-        var completionsSnapshot = JSON.parse(JSON.stringify(state.completions));
         state.workoutHistory.splice(index, 1);
         rebuildCompletionAfterDelete(record);
         saveState();
         root.querySelector("#workoutEditor").hidden = true;
         renderTrainingHistory();
         renderProgressCharts();
+        renderWeeklyReports();
         refreshView("dashboard");
         refreshView("training");
         offerUndo("workoutEditToast", "Training verwijderd.", function () {
           state.workoutHistory.splice(index, 0, record);
-          state.completions = completionsSnapshot;
+          /* Herbereken alleen de voltooiing van deze workout/week in plaats van een
+             volledige snapshot terug te zetten: tussentijds afgeronde trainingen
+             blijven zo behouden. */
+          var cycle = record.cycle || 1;
+          var latest = state.workoutHistory.slice().reverse().find(function (item) {
+            return item.workoutId === record.workoutId && safeNumber(item.week, 1) === safeNumber(record.week, 1) && (item.cycle || 1) === cycle && recordCountsForWeek(item);
+          });
+          if (latest) updateCompletionFromRecord(latest);
         });
       }
 
@@ -2049,8 +2082,11 @@
             var weight = safeNumber(log.weight, 0);
             var index = safeNumber(indexKey, -1);
             if (weight <= 0 || !exercises[index]) return;
-            var key = record.workoutId + "::" + index;
-            if (!series[key]) series[key] = { label: exercises[index][0], points: [] };
+            /* Groepeer op de werkelijk uitgevoerde oefening: gewichten van een
+               alternatief horen niet in de grafiek van de geplande oefening. */
+            var label = log.alternative || exercises[index][0];
+            var key = record.workoutId + "::" + label;
+            if (!series[key]) series[key] = { label: label, points: [] };
             series[key].points.push({ date: record.day || String(record.date).slice(0, 10), value: weight });
           });
         });
@@ -2235,8 +2271,6 @@
         var index = state.weeklyCheckins.findIndex(function (item) { return item.day === day; });
         if (index < 0) return;
         var removed = state.weeklyCheckins[index];
-        var pendingSnapshot = state.pendingCalories ? JSON.parse(JSON.stringify(state.pendingCalories)) : null;
-        var coachingSnapshot = JSON.parse(JSON.stringify(state.coaching));
         state.weeklyCheckins.splice(index, 1);
         if (state.pendingCalories && state.pendingCalories.day === day) state.pendingCalories = null;
         var latest = state.weeklyCheckins.slice().sort(function (a, b) { return a.day.localeCompare(b.day); }).slice(-1)[0];
@@ -2248,9 +2282,13 @@
         saveState();
         renderAll();
         offerUndo("weeklyToast", "Weekcheck verwijderd.", function () {
-          state.weeklyCheckins.splice(index, 0, removed);
-          state.pendingCalories = pendingSnapshot;
-          state.coaching = coachingSnapshot;
+          /* Als er intussen een nieuwe check voor dezelfde dag is opgeslagen, die
+             laten staan (geen duplicaat maken); anders het record terugzetten. */
+          var duplicate = state.weeklyCheckins.some(function (item) { return item.day === removed.day; });
+          if (!duplicate) state.weeklyCheckins.splice(Math.min(index, state.weeklyCheckins.length), 0, removed);
+          /* Coaching afleiden van wat nu echt de laatste check is. */
+          var latest = state.weeklyCheckins.slice().sort(function (a, b) { return a.day.localeCompare(b.day); }).slice(-1)[0];
+          if (latest) state.coaching = { mode: latest.mode, message: latest.message + " " + latest.calorieMessage, updated: latest.day };
         });
       }
 
@@ -2269,7 +2307,7 @@
         else state.weeklyCheckins.push(record);
         var latestDay = state.weeklyCheckins.reduce(function (latest, item) { return item.day > latest ? item.day : latest; }, "");
         var isLatestCheck = values.day === latestDay;
-        if (isLatestCheck && !existing && advice.suggestedCalories && advice.suggestedCalories !== state.profile.calories) {
+        if (isLatestCheck && advice.suggestedCalories && advice.suggestedCalories !== state.profile.calories) {
           state.pendingCalories = { day: values.day, from: state.profile.calories, to: advice.suggestedCalories };
         } else if (isLatestCheck) {
           /* Een nieuwere check zonder voorstel maakt een ouder, nog openstaand voorstel ongeldig. */
@@ -2362,7 +2400,8 @@
         var salt = base64ToBytes(payload.salt);
         var iv = base64ToBytes(payload.iv);
         var data = base64ToBytes(payload.data);
-        return backupCryptoKey(password, salt, safeNumber(payload.iterations, BACKUP_KDF_ITERATIONS)).then(function (key) {
+        var iterations = Math.min(1000000, Math.max(100000, Math.round(safeNumber(payload.iterations, BACKUP_KDF_ITERATIONS))));
+        return backupCryptoKey(password, salt, iterations).then(function (key) {
           return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
         }).then(function (plain) {
           return new TextDecoder().decode(plain);
@@ -2482,6 +2521,7 @@
       }
 
       function applyImportedBackup(jsonText) {
+        clearUndo();
         /* Bewaar de huidige staat zodat een mislukte import nooit data vernietigt;
            de nieuwe staat wordt pas gepersisteerd nadat het renderen is geslaagd. */
         var previousState = state;
@@ -2538,6 +2578,7 @@
 
       function resetData() {
         if (!window.confirm("Alle trainingen, metingen en instellingen definitief uit deze browser wissen?")) return;
+        clearUndo();
         localStorage.removeItem(STORAGE_KEY);
         state = JSON.parse(JSON.stringify(defaultState));
         activeSession = null;
@@ -2555,19 +2596,27 @@
       var pendingUndo = null;
       var undoTimer = null;
 
-      function offerUndo(toastId, message, restore) {
-        pendingUndo = { toastId: toastId, restore: restore };
+      function clearUndo() {
         clearTimeout(undoTimer);
+        if (pendingUndo) {
+          var previous = root.querySelector("#" + pendingUndo.toastId);
+          if (previous && previous.querySelector("[data-undo]")) previous.innerHTML = "";
+        }
+        pendingUndo = null;
+      }
+
+      function offerUndo(toastId, message, restore) {
+        /* Eerst een eventuele oudere undo-knop opruimen: anders blijft die staan
+           terwijl pendingUndo al naar een nieuwere verwijdering wijst en zou een
+           klik erop het verkeerde item terugzetten. */
+        clearUndo();
+        pendingUndo = { toastId: toastId, restore: restore };
         var element = root.querySelector("#" + toastId);
         if (element) {
           element.classList.remove("text-destructive");
           element.innerHTML = escapeHtml(message) + " <button class=\"btn undo-btn\" type=\"button\" data-undo>Ongedaan maken</button>";
         }
-        undoTimer = setTimeout(function () {
-          pendingUndo = null;
-          var current = root.querySelector("#" + toastId);
-          if (current && current.querySelector("[data-undo]")) current.innerHTML = "";
-        }, 8000);
+        undoTimer = setTimeout(clearUndo, 20000);
       }
 
       function showToast(id, message, destructive) {
@@ -2575,7 +2624,8 @@
         if (!element) return;
         element.textContent = message;
         element.classList.toggle("text-destructive", Boolean(destructive));
-        window.setTimeout(function () { if (element.textContent === message) element.textContent = ""; }, 3500);
+        /* Foutmeldingen blijven staan tot ze worden vervangen; succes verdwijnt vanzelf. */
+        if (!destructive) window.setTimeout(function () { if (element.textContent === message) element.textContent = ""; }, 3500);
       }
 
       function showView(name, options) {
@@ -2631,6 +2681,7 @@
             root.querySelector("#customFoodFiber").value = quickEntry.fiber === undefined || quickEntry.fiber === null ? "" : quickEntry.fiber;
             root.querySelector("#customFoodVegetables").value = quickEntry.vegetables === undefined || quickEntry.vegetables === null ? "" : quickEntry.vegetables;
             root.querySelector("#customFoodFruit").value = quickEntry.fruit === undefined || quickEntry.fruit === null ? "" : quickEntry.fruit;
+            root.querySelector("#customFoodName").focus({ preventScroll: true });
           }
           return;
         }
@@ -2645,8 +2696,10 @@
         if (nav) { showView(nav.dataset.nav); return; }
         var start = event.target.closest("[data-start-workout]");
         if (start) { startWorkout(start.dataset.startWorkout, safeNumber(start.dataset.week, state.selectedWeek)); return; }
-        if (event.target.closest("[data-undo]")) {
-          if (pendingUndo) {
+        var undoButton = event.target.closest("[data-undo]");
+        if (undoButton) {
+          var undoToast = undoButton.closest(".toast");
+          if (pendingUndo && undoToast && undoToast.id === pendingUndo.toastId) {
             var undo = pendingUndo;
             pendingUndo = null;
             clearTimeout(undoTimer);
@@ -2654,7 +2707,39 @@
             saveState();
             renderAll();
             showToast(undo.toastId, "Teruggezet.");
+          } else if (undoToast) {
+            undoToast.innerHTML = "";
           }
+          return;
+        }
+        if (event.target.closest("#mealSwapButton")) {
+          var swapSelect = root.querySelector("#mealSwapSelect");
+          var swapWith = Math.round(safeNumber(swapSelect && swapSelect.value, -1));
+          if (swapWith < 0 || swapWith > 6 || swapWith === state.selectedMealDay) {
+            showToast("nutritionQualityToast", "Kies eerst een dag om mee te ruilen.", true);
+            return;
+          }
+          var previousOrder = state.mealPlanOrder.slice();
+          var current = state.selectedMealDay;
+          var keyCurrent = mealLogKey(current);
+          var keySwap = mealLogKey(swapWith);
+          var logsCurrent = state.mealLogs[keyCurrent];
+          var logsSwap = state.mealLogs[keySwap];
+          var order = state.mealPlanOrder.slice();
+          var swap = order[current];
+          order[current] = order[swapWith];
+          order[swapWith] = swap;
+          state.mealPlanOrder = order;
+          delete state.mealLogs[keyCurrent];
+          delete state.mealLogs[keySwap];
+          saveState();
+          renderNutrition();
+          refreshView("dashboard");
+          offerUndo("nutritionQualityToast", "Menu's van " + dayLong[current].toLowerCase() + " en " + dayLong[swapWith].toLowerCase() + " geruild; vinkjes gewist.", function () {
+            state.mealPlanOrder = previousOrder;
+            if (logsCurrent !== undefined) state.mealLogs[keyCurrent] = logsCurrent;
+            if (logsSwap !== undefined) state.mealLogs[keySwap] = logsSwap;
+          });
           return;
         }
         if (event.target.closest("#exportCalendar")) { exportTrainingCalendar(); return; }
@@ -2666,6 +2751,7 @@
           state.backupSnoozeUntil = localIso(snoozeUntil);
           saveState();
           renderDashboard();
+          showToast("dashboardToast", "Prima \u2014 over een week herinneren we je opnieuw aan de back-up.");
           return;
         }
         if (event.target.closest("[data-open-training]")) { showView("training"); return; }
@@ -2714,32 +2800,6 @@
       root.addEventListener("change", function (event) {
         if (event.target.id === "customFoodRelation" || event.target.id === "customFoodDate") {
           updateCustomFoodReplaceOptions(root.querySelector("#customFoodReplaceMeal").value);
-          return;
-        }
-        if (event.target.id === "mealSwapSelect") {
-          var swapWith = Math.round(safeNumber(event.target.value, -1));
-          if (swapWith < 0 || swapWith > 6 || swapWith === state.selectedMealDay) { event.target.value = ""; return; }
-          var previousOrder = state.mealPlanOrder.slice();
-          var current = state.selectedMealDay;
-          var keyCurrent = mealLogKey(current);
-          var keySwap = mealLogKey(swapWith);
-          var logsCurrent = state.mealLogs[keyCurrent];
-          var logsSwap = state.mealLogs[keySwap];
-          var order = state.mealPlanOrder.slice();
-          var swap = order[current];
-          order[current] = order[swapWith];
-          order[swapWith] = swap;
-          state.mealPlanOrder = order;
-          delete state.mealLogs[keyCurrent];
-          delete state.mealLogs[keySwap];
-          saveState();
-          renderNutrition();
-          refreshView("dashboard");
-          offerUndo("nutritionQualityToast", "Menu's van " + dayLong[current].toLowerCase() + " en " + dayLong[swapWith].toLowerCase() + " geruild; vinkjes gewist.", function () {
-            state.mealPlanOrder = previousOrder;
-            if (logsCurrent !== undefined) state.mealLogs[keyCurrent] = logsCurrent;
-            if (logsSwap !== undefined) state.mealLogs[keySwap] = logsSwap;
-          });
           return;
         }
         if (event.target.id === "restDurationSelect") {
@@ -2889,7 +2949,7 @@
         /* Niet midden in een invulactie (bv. de weekcheck rond middernacht) alles wegrenderen;
            de volgende tick of tabwissel probeert het opnieuw. */
         var active = document.activeElement;
-        if (active && root.contains(active) && active.matches("input, select, textarea")) return;
+        if (active && root.contains(active) && active.matches('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea')) return;
         todayIso = currentDay;
         state.selectedWeek = currentProgramWeek();
         state.selectedMealDay = todayMealDay();

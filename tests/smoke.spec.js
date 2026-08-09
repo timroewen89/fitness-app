@@ -207,9 +207,9 @@ test("eigen voeding: snelkeuze verschijnt en verwijderen is ongedaan te maken", 
 test("dagmenu's ruilen wisselt de menu-inhoud", async ({ page }) => {
   await page.click('[data-nav="nutrition"]');
   const before = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
-  page.once("dialog", dialog => dialog.accept());
   const otherDay = await page.locator("#mealSwapSelect option:not([value=''])").first().getAttribute("value");
   await page.selectOption("#mealSwapSelect", otherDay);
+  await page.click("#mealSwapButton");
   await expect(page.locator("#nutritionQualityToast")).toContainText("geruild");
   const after = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
   expect(after).not.toBe(before);
@@ -244,6 +244,7 @@ test("dagmenu's ruilen is ongedaan te maken", async ({ page }) => {
   const before = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
   const otherDay = await page.locator("#mealSwapSelect option:not([value=''])").first().getAttribute("value");
   await page.selectOption("#mealSwapSelect", otherDay);
+  await page.click("#mealSwapButton");
   await expect(page.locator("#nutritionQualityToast")).toContainText("geruild");
   await page.click("#nutritionQualityToast [data-undo]");
   const restored = await page.locator("#mealPlanCard .meal-name .text-small").first().textContent();
@@ -267,4 +268,38 @@ test("PR-detectie meldt een nieuw record bij zwaarder gewicht", async ({ page })
   await expect(page.locator("#trainingToast")).toContainText("Nieuw record");
   await page.click('[data-nav="progress"]');
   await expect(page.locator(".pr-badge").first()).toBeVisible();
+});
+
+test("foutmeldingen kleuren rood, niet groen", async ({ page }) => {
+  await page.click('[data-nav="training"]');
+  await page.fill("#fitnessTestDistance", "50");
+  await page.click("#saveFitnessTest");
+  await expect(page.locator("#fitnessTestToast")).toContainText("tussen 200");
+  const color = await page.locator("#fitnessTestToast").evaluate(el => getComputedStyle(el).color);
+  // destructive-kleur (roodbruin), niet succes-groen
+  expect(color).not.toBe("rgb(0, 122, 48)");
+});
+
+test("undo-knop van een oudere verwijdering verdwijnt bij een nieuwe", async ({ page }) => {
+  // Twee eigen voedingsitems aanmaken
+  await page.click('[data-nav="nutrition"]');
+  for (const naam of ["Item A", "Item B"]) {
+    await page.click("#openCustomFood");
+    await page.fill("#customFoodName", naam);
+    await page.fill("#customFoodCalories", "100");
+    await page.fill("#customFoodProtein", "5");
+    await page.click("#customFoodSubmit");
+  }
+  // Kniecheck aanmaken en verwijderen (undo in kneeToast)
+  await page.click('[data-nav="knee"]');
+  await page.click('#kneeForm button[type="submit"]');
+  await page.locator("[data-delete-knee]").first().click();
+  await expect(page.locator("#kneeToast [data-undo]")).toBeVisible();
+  // Daarna eigen voeding verwijderen (undo in customFoodSectionToast)
+  await page.click('[data-nav="nutrition"]');
+  await page.locator("[data-delete-food]").first().click();
+  await expect(page.locator("#customFoodSectionToast [data-undo]")).toBeVisible();
+  // De oude undo-knop in de knie-toast moet weg zijn
+  await page.click('[data-nav="knee"]');
+  await expect(page.locator("#kneeToast [data-undo]")).toHaveCount(0);
 });
