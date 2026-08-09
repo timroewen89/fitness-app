@@ -685,10 +685,10 @@
         var meal = sourceMeal.slice();
         var settings = state.nutritionSettings || defaultState.nutritionSettings;
         var scale = nutritionScale();
-        if (dayIndex === 5 && mealIndex === 3) {
+        if (menuIndexForDay(dayIndex) === 5 && mealIndex === 3) {
           meal[1] = settings.saturdayProtein === "vega" ? "200 g vegetarische stukjes, 350 g aardappelen, 300 g groenten en 10 g olijfolie" : "100 g biefstuk, 350 g aardappelen, 300 g groenten en 10 g olijfolie";
         }
-        if (dayIndex === 6 && mealIndex === 3) {
+        if (menuIndexForDay(dayIndex) === 6 && mealIndex === 3) {
           meal[1] = (settings.sundayProtein === "tofu" ? "200 g tofu" : "150 g kipfilet") + ", 150 g kikkererwten (uitgelekt), 75 g zilvervliesrijst (droog), 300 g groenten en 100 ml lichte kokosmelk";
         }
         meal[1] = scaleMealDescription(meal[1], scale, nutritionProteinScale());
@@ -747,11 +747,15 @@
 
       /* Het menu voor een dag, rekening houdend met geruilde dagmenu's. Ruilen is
          altijd een permutatie, zodat de weekboodschappenlijst blijft kloppen. */
-      function menuForDay(dayIndex) {
+      function menuIndexForDay(dayIndex) {
         var order = Array.isArray(state.mealPlanOrder) ? state.mealPlanOrder : [];
         var mapped = Math.round(safeNumber(order[dayIndex], dayIndex));
         if (mapped < 0 || mapped >= mealDays.length) mapped = dayIndex;
-        return mealDays[mapped];
+        return mapped;
+      }
+
+      function menuForDay(dayIndex) {
+        return mealDays[menuIndexForDay(dayIndex)];
       }
 
       function mealLogKey(dayIndex) {
@@ -815,7 +819,7 @@
         var form = isTestWeek
           ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
           : "<p class=\"text-small text-muted\">Volgende meting in week " + (nextWeek || "1 van de volgende cyclus") + ".</p>";
-        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "<div class=\"toast\" id=\"fitnessTestToast\" role=\"status\"></div>";
+        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "";
       }
 
       function saveFitnessTest() {
@@ -966,7 +970,7 @@
         var options = Object.keys(trainingSchedules).map(function (key) {
           return "<option value=\"" + key + "\"" + (key === selectedKey ? " selected" : "") + ">" + escapeHtml(trainingSchedules[key].label) + "</option>";
         }).join("");
-        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div><div class=\"toast\" id=\"calendarToast\" role=\"status\"></div></article>";
+        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div></article>";
       }
 
       function latestWorkoutRecord(workoutId) {
@@ -986,8 +990,13 @@
           var workout = workouts.find(function (item) { return item.id === record.workoutId; });
           if (!workout) return;
           workout.exercises(safeNumber(record.week, 1)).forEach(function (exercise, index) {
-            if (exercise[0] !== exerciseName || !record.logs[index]) return;
-            var weight = Number(record.logs[index].weight);
+            var log = record.logs[index];
+            if (!log) return;
+            /* Match op de werkelijk uitgevoerde oefening: een gewicht dat op een
+               alternatief is gelogd telt niet als record van de geplande oefening. */
+            var performedName = log.alternative || exercise[0];
+            if (performedName !== exerciseName) return;
+            var weight = Number(log.weight);
             if (Number.isFinite(weight) && weight > 0 && (best === null || weight > best)) best = weight;
           });
         });
@@ -1000,8 +1009,8 @@
         var records = [];
         Object.keys(logs).forEach(function (key) {
           var index = Math.round(safeNumber(key, -1));
-          var name = names[index];
-          if (!name || logs[key].alternative) return;
+          var name = logs[key] && logs[key].alternative ? logs[key].alternative : names[index];
+          if (!name) return;
           var weight = Number(logs[key].weight);
           if (!Number.isFinite(weight) || weight <= 0) return;
           var best = bestWeightForExercise(name);
@@ -1017,9 +1026,13 @@
           var record = state.workoutHistory[i];
           if (record.workoutId !== workoutId || record.manual === true || !record.logs) continue;
           var names = workout.exercises(safeNumber(record.week, 1)).map(function (item) { return item[0]; });
-          var index = names.indexOf(exerciseName);
-          if (index === -1 || !record.logs[index]) continue;
-          var log = record.logs[index];
+          var log = null;
+          for (var position = 0; position < names.length; position++) {
+            var candidate = record.logs[position];
+            if (!candidate) continue;
+            if ((candidate.alternative || names[position]) === exerciseName) { log = candidate; break; }
+          }
+          if (!log) continue;
           var hasValue = Object.keys(log).some(function (key) {
             return key !== "alternative" && String(log[key]).trim() !== "";
           });
@@ -1292,7 +1305,7 @@
           var alternatives = alternativesFor(exercise[0]);
           var alternativeField = alternatives.length ? "<label class=\"form-label exercise-alternative\">Knievriendelijk alternatief<select class=\"form-select\" data-session-alternative=\"" + index + "\"><option value=\"\">Geplande oefening</option>" + alternatives.map(function (alternative) { return "<option value=\"" + escapeHtml(alternative) + "\"" + (log.alternative === alternative ? " selected" : "") + ">" + escapeHtml(alternative) + "</option>"; }).join("") + "</select></label>" : "";
           return "<div class=\"session-block\"><div class=\"session-exercise" + (checked ? " is-done" : "") + "\"><input class=\"form-check-input\" type=\"checkbox\" aria-label=\"" + escapeHtml(exercise[0]) + " voltooid\" data-session-check=\"" + index + "\"" + (checked ? " checked" : "") + "><span class=\"session-label\"><strong>" + escapeHtml(log.alternative || exercise[0]) + "</strong><span class=\"text-small text-muted\">" + (log.alternative ? "In plaats van " + escapeHtml(exercise[0]) + ". " : "") + escapeHtml(exercise[2]) + "</span></span><span class=\"viz-badge\">" + escapeHtml(exercise[1]) + "</span></div>" + exerciseGuideHtml(log.alternative || exercise[0]) + previousHint + "<div class=\"session-log-grid\">" + fields + alternativeField + "<span class=\"exercise-advice text-small\">" + escapeHtml(exerciseProgressionAdvice(workout.id, index, exercise)) + "</span></div></div>";
-        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
+        }).join("") + "</div><div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Ervaren zwaarte (RPE): <output id=\"sessionRpeValue\">" + activeSession.rpe + "</output>/10</span><input class=\"form-range\" id=\"sessionRpe\" type=\"range\" min=\"1\" max=\"10\" value=\"" + activeSession.rpe + "\"></label><label class=\"form-field\"><span class=\"form-label\">Knieklachten: <output id=\"sessionKneeValue\">" + activeSession.kneePain + "</output>/10</span><input class=\"form-range\" id=\"sessionKnee\" type=\"range\" min=\"0\" max=\"10\" value=\"" + activeSession.kneePain + "\"></label></div><div class=\"card-actions session-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"completeWorkout\">Training afronden</button><button class=\"btn\" type=\"button\" id=\"restButton\">Start rust</button><label class=\"form-label rest-duration\"><span class=\"sr-only\">Rustduur</span><select class=\"form-select\" id=\"restDurationSelect\" aria-label=\"Rustduur in seconden\">" + [60, 90, 120].map(function (seconds) { return "<option value=\"" + seconds + "\"" + (seconds === state.restDuration ? " selected" : "") + ">" + seconds + " s</option>"; }).join("") + "</select></label><span class=\"rest-clock\" id=\"restClock\"></span><button class=\"btn btn-danger\" type=\"button\" id=\"cancelWorkout\">Stop zonder opslaan</button></div></article>";
         updateSessionClocks();
       }
 
@@ -1652,7 +1665,7 @@
         if (swapHost) {
           swapHost.innerHTML = "<label class=\"form-label meal-swap\">Ruil het menu van " + dayLong[selected].toLowerCase() + " met<select class=\"form-select\" id=\"mealSwapSelect\"><option value=\"\">Kies een dag\u2026</option>" +
             dayLong.map(function (day, index) { return index === selected ? "" : "<option value=\"" + index + "\">" + day + "</option>"; }).join("") +
-            "</select></label>";
+            "</select></label><button class=\"btn\" type=\"button\" id=\"mealSwapButton\">Ruil menu's</button>";
         }
         var key = mealLogKey(selected);
         var eaten = state.mealLogs[key] || [];
@@ -1888,7 +1901,9 @@
         else state.weights.push({ date: date, value: value });
         saveState();
         renderWeight();
+        renderWeeklyReports();
         refreshView("dashboard");
+        refreshView("weekly");
         showToast("weightToast", "Meting opgeslagen.");
       }
 
@@ -1912,7 +1927,9 @@
         state.weights.splice(index, 1);
         saveState();
         renderWeight();
+        renderWeeklyReports();
         refreshView("dashboard");
+        refreshView("weekly");
         offerUndo("weightToast", "Meting verwijderd.", function () {
           state.weights.splice(index, 0, entry);
         });
@@ -1984,6 +2001,7 @@
         root.querySelector("#workoutEditor").hidden = true;
         renderTrainingHistory();
         renderProgressCharts();
+        renderWeeklyReports();
         refreshView("dashboard");
         refreshView("training");
       }
@@ -1992,18 +2010,25 @@
         var index = state.workoutHistory.findIndex(function (item) { return item.id === id; });
         if (index < 0) return;
         var record = state.workoutHistory[index];
-        var completionsSnapshot = JSON.parse(JSON.stringify(state.completions));
         state.workoutHistory.splice(index, 1);
         rebuildCompletionAfterDelete(record);
         saveState();
         root.querySelector("#workoutEditor").hidden = true;
         renderTrainingHistory();
         renderProgressCharts();
+        renderWeeklyReports();
         refreshView("dashboard");
         refreshView("training");
         offerUndo("workoutEditToast", "Training verwijderd.", function () {
           state.workoutHistory.splice(index, 0, record);
-          state.completions = completionsSnapshot;
+          /* Herbereken alleen de voltooiing van deze workout/week in plaats van een
+             volledige snapshot terug te zetten: tussentijds afgeronde trainingen
+             blijven zo behouden. */
+          var cycle = record.cycle || 1;
+          var latest = state.workoutHistory.slice().reverse().find(function (item) {
+            return item.workoutId === record.workoutId && safeNumber(item.week, 1) === safeNumber(record.week, 1) && (item.cycle || 1) === cycle && recordCountsForWeek(item);
+          });
+          if (latest) updateCompletionFromRecord(latest);
         });
       }
 
@@ -2049,8 +2074,11 @@
             var weight = safeNumber(log.weight, 0);
             var index = safeNumber(indexKey, -1);
             if (weight <= 0 || !exercises[index]) return;
-            var key = record.workoutId + "::" + index;
-            if (!series[key]) series[key] = { label: exercises[index][0], points: [] };
+            /* Groepeer op de werkelijk uitgevoerde oefening: gewichten van een
+               alternatief horen niet in de grafiek van de geplande oefening. */
+            var label = log.alternative || exercises[index][0];
+            var key = record.workoutId + "::" + label;
+            if (!series[key]) series[key] = { label: label, points: [] };
             series[key].points.push({ date: record.day || String(record.date).slice(0, 10), value: weight });
           });
         });
@@ -2235,8 +2263,6 @@
         var index = state.weeklyCheckins.findIndex(function (item) { return item.day === day; });
         if (index < 0) return;
         var removed = state.weeklyCheckins[index];
-        var pendingSnapshot = state.pendingCalories ? JSON.parse(JSON.stringify(state.pendingCalories)) : null;
-        var coachingSnapshot = JSON.parse(JSON.stringify(state.coaching));
         state.weeklyCheckins.splice(index, 1);
         if (state.pendingCalories && state.pendingCalories.day === day) state.pendingCalories = null;
         var latest = state.weeklyCheckins.slice().sort(function (a, b) { return a.day.localeCompare(b.day); }).slice(-1)[0];
@@ -2248,9 +2274,13 @@
         saveState();
         renderAll();
         offerUndo("weeklyToast", "Weekcheck verwijderd.", function () {
-          state.weeklyCheckins.splice(index, 0, removed);
-          state.pendingCalories = pendingSnapshot;
-          state.coaching = coachingSnapshot;
+          /* Als er intussen een nieuwe check voor dezelfde dag is opgeslagen, die
+             laten staan (geen duplicaat maken); anders het record terugzetten. */
+          var duplicate = state.weeklyCheckins.some(function (item) { return item.day === removed.day; });
+          if (!duplicate) state.weeklyCheckins.splice(Math.min(index, state.weeklyCheckins.length), 0, removed);
+          /* Coaching afleiden van wat nu echt de laatste check is. */
+          var latest = state.weeklyCheckins.slice().sort(function (a, b) { return a.day.localeCompare(b.day); }).slice(-1)[0];
+          if (latest) state.coaching = { mode: latest.mode, message: latest.message + " " + latest.calorieMessage, updated: latest.day };
         });
       }
 
@@ -2269,7 +2299,7 @@
         else state.weeklyCheckins.push(record);
         var latestDay = state.weeklyCheckins.reduce(function (latest, item) { return item.day > latest ? item.day : latest; }, "");
         var isLatestCheck = values.day === latestDay;
-        if (isLatestCheck && !existing && advice.suggestedCalories && advice.suggestedCalories !== state.profile.calories) {
+        if (isLatestCheck && advice.suggestedCalories && advice.suggestedCalories !== state.profile.calories) {
           state.pendingCalories = { day: values.day, from: state.profile.calories, to: advice.suggestedCalories };
         } else if (isLatestCheck) {
           /* Een nieuwere check zonder voorstel maakt een ouder, nog openstaand voorstel ongeldig. */
@@ -2482,6 +2512,7 @@
       }
 
       function applyImportedBackup(jsonText) {
+        clearUndo();
         /* Bewaar de huidige staat zodat een mislukte import nooit data vernietigt;
            de nieuwe staat wordt pas gepersisteerd nadat het renderen is geslaagd. */
         var previousState = state;
@@ -2538,6 +2569,7 @@
 
       function resetData() {
         if (!window.confirm("Alle trainingen, metingen en instellingen definitief uit deze browser wissen?")) return;
+        clearUndo();
         localStorage.removeItem(STORAGE_KEY);
         state = JSON.parse(JSON.stringify(defaultState));
         activeSession = null;
@@ -2555,19 +2587,27 @@
       var pendingUndo = null;
       var undoTimer = null;
 
-      function offerUndo(toastId, message, restore) {
-        pendingUndo = { toastId: toastId, restore: restore };
+      function clearUndo() {
         clearTimeout(undoTimer);
+        if (pendingUndo) {
+          var previous = root.querySelector("#" + pendingUndo.toastId);
+          if (previous && previous.querySelector("[data-undo]")) previous.innerHTML = "";
+        }
+        pendingUndo = null;
+      }
+
+      function offerUndo(toastId, message, restore) {
+        /* Eerst een eventuele oudere undo-knop opruimen: anders blijft die staan
+           terwijl pendingUndo al naar een nieuwere verwijdering wijst en zou een
+           klik erop het verkeerde item terugzetten. */
+        clearUndo();
+        pendingUndo = { toastId: toastId, restore: restore };
         var element = root.querySelector("#" + toastId);
         if (element) {
           element.classList.remove("text-destructive");
           element.innerHTML = escapeHtml(message) + " <button class=\"btn undo-btn\" type=\"button\" data-undo>Ongedaan maken</button>";
         }
-        undoTimer = setTimeout(function () {
-          pendingUndo = null;
-          var current = root.querySelector("#" + toastId);
-          if (current && current.querySelector("[data-undo]")) current.innerHTML = "";
-        }, 8000);
+        undoTimer = setTimeout(clearUndo, 20000);
       }
 
       function showToast(id, message, destructive) {
@@ -2645,8 +2685,10 @@
         if (nav) { showView(nav.dataset.nav); return; }
         var start = event.target.closest("[data-start-workout]");
         if (start) { startWorkout(start.dataset.startWorkout, safeNumber(start.dataset.week, state.selectedWeek)); return; }
-        if (event.target.closest("[data-undo]")) {
-          if (pendingUndo) {
+        var undoButton = event.target.closest("[data-undo]");
+        if (undoButton) {
+          var undoToast = undoButton.closest(".toast");
+          if (pendingUndo && undoToast && undoToast.id === pendingUndo.toastId) {
             var undo = pendingUndo;
             pendingUndo = null;
             clearTimeout(undoTimer);
@@ -2654,7 +2696,39 @@
             saveState();
             renderAll();
             showToast(undo.toastId, "Teruggezet.");
+          } else if (undoToast) {
+            undoToast.innerHTML = "";
           }
+          return;
+        }
+        if (event.target.closest("#mealSwapButton")) {
+          var swapSelect = root.querySelector("#mealSwapSelect");
+          var swapWith = Math.round(safeNumber(swapSelect && swapSelect.value, -1));
+          if (swapWith < 0 || swapWith > 6 || swapWith === state.selectedMealDay) {
+            showToast("nutritionQualityToast", "Kies eerst een dag om mee te ruilen.", true);
+            return;
+          }
+          var previousOrder = state.mealPlanOrder.slice();
+          var current = state.selectedMealDay;
+          var keyCurrent = mealLogKey(current);
+          var keySwap = mealLogKey(swapWith);
+          var logsCurrent = state.mealLogs[keyCurrent];
+          var logsSwap = state.mealLogs[keySwap];
+          var order = state.mealPlanOrder.slice();
+          var swap = order[current];
+          order[current] = order[swapWith];
+          order[swapWith] = swap;
+          state.mealPlanOrder = order;
+          delete state.mealLogs[keyCurrent];
+          delete state.mealLogs[keySwap];
+          saveState();
+          renderNutrition();
+          refreshView("dashboard");
+          offerUndo("nutritionQualityToast", "Menu's van " + dayLong[current].toLowerCase() + " en " + dayLong[swapWith].toLowerCase() + " geruild; vinkjes gewist.", function () {
+            state.mealPlanOrder = previousOrder;
+            if (logsCurrent !== undefined) state.mealLogs[keyCurrent] = logsCurrent;
+            if (logsSwap !== undefined) state.mealLogs[keySwap] = logsSwap;
+          });
           return;
         }
         if (event.target.closest("#exportCalendar")) { exportTrainingCalendar(); return; }
@@ -2714,32 +2788,6 @@
       root.addEventListener("change", function (event) {
         if (event.target.id === "customFoodRelation" || event.target.id === "customFoodDate") {
           updateCustomFoodReplaceOptions(root.querySelector("#customFoodReplaceMeal").value);
-          return;
-        }
-        if (event.target.id === "mealSwapSelect") {
-          var swapWith = Math.round(safeNumber(event.target.value, -1));
-          if (swapWith < 0 || swapWith > 6 || swapWith === state.selectedMealDay) { event.target.value = ""; return; }
-          var previousOrder = state.mealPlanOrder.slice();
-          var current = state.selectedMealDay;
-          var keyCurrent = mealLogKey(current);
-          var keySwap = mealLogKey(swapWith);
-          var logsCurrent = state.mealLogs[keyCurrent];
-          var logsSwap = state.mealLogs[keySwap];
-          var order = state.mealPlanOrder.slice();
-          var swap = order[current];
-          order[current] = order[swapWith];
-          order[swapWith] = swap;
-          state.mealPlanOrder = order;
-          delete state.mealLogs[keyCurrent];
-          delete state.mealLogs[keySwap];
-          saveState();
-          renderNutrition();
-          refreshView("dashboard");
-          offerUndo("nutritionQualityToast", "Menu's van " + dayLong[current].toLowerCase() + " en " + dayLong[swapWith].toLowerCase() + " geruild; vinkjes gewist.", function () {
-            state.mealPlanOrder = previousOrder;
-            if (logsCurrent !== undefined) state.mealLogs[keyCurrent] = logsCurrent;
-            if (logsSwap !== undefined) state.mealLogs[keySwap] = logsSwap;
-          });
           return;
         }
         if (event.target.id === "restDurationSelect") {

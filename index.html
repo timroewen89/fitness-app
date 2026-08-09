@@ -728,7 +728,6 @@ svg {
       margin-bottom: .2rem;
     }
     #fitJourneyApp .session-actions .rest-duration {
-      order: 2;
       margin: 0;
     }
     #fitJourneyApp .session-actions .rest-duration .form-select {
@@ -989,10 +988,6 @@ svg {
       text-align: center;
       font-variant-numeric: tabular-nums;
     }
-    #fitJourneyApp .session-actions #completeWorkout { order: 1; }
-    #fitJourneyApp .session-actions #restButton { order: 2; }
-    #fitJourneyApp .session-actions .rest-clock { order: 3; }
-    #fitJourneyApp .session-actions #cancelWorkout { order: 4; }
     #fitJourneyApp .manual-workout-toggle { margin: 0 0 1rem; }
     #fitJourneyApp .manual-workout-form { margin-bottom: 1rem; }
     #fitJourneyApp .manual-exercise-fieldset {
@@ -1160,6 +1155,10 @@ svg {
       color: var(--green);
       min-height: 1.35rem;
     }
+    /* Foutmeldingen mogen nooit succes-groen kleuren (specificiteit boven .toast). */
+    #fitJourneyApp .toast.text-destructive {
+      color: var(--destructive);
+    }
     #fitJourneyApp .footer-note {
       margin-top: 1.25rem;
       padding-top: 1rem;
@@ -1238,6 +1237,13 @@ svg {
     }
     /* Op touch-apparaten (ook > 760px, bv. iPad): geen iOS-autozoom en volwaardige tap targets. */
     @media (pointer: coarse) {
+      #fitJourneyApp summary,
+      #fitJourneyApp .exercise-video-link { min-height: 44px; display: flex; align-items: center; }
+      /* display:flex verwijdert de standaard uitklapmarker; eigen marker terugzetten. */
+      #fitJourneyApp summary { list-style: none; }
+      #fitJourneyApp summary::-webkit-details-marker { display: none; }
+      #fitJourneyApp summary::before { content: "\25B8"; margin-right: .35rem; flex: 0 0 auto; }
+      #fitJourneyApp details[open] > summary::before { content: "\25BE"; }
       #fitJourneyApp :is(.form-control, .form-select) { font-size: 16px; }
       #fitJourneyApp :is(.btn, .form-control, .form-select) { min-height: 44px; }
       #fitJourneyApp :is(.form-check, .meal-check, .shopping-check) { min-height: 44px; }
@@ -1248,6 +1254,8 @@ svg {
       }
     }
     @media (max-width: 540px) {
+      #fitJourneyApp .session-actions #completeWorkout { flex: 1 1 100%; }
+      #fitJourneyApp .session-actions :is(#restButton, .rest-duration, .rest-clock) { flex: 1 1 auto; }
       #fitJourneyApp .app-shell {
         padding: .75rem;
         padding-top: max(.75rem, env(safe-area-inset-top, 0px));
@@ -1335,6 +1343,8 @@ svg {
         </div>
         <div class="content-grid" id="trainingGuidance"></div>
         <article class="card" id="fitnessTestCard"></article>
+        <div class="toast" id="fitnessTestToast" role="status" aria-live="polite"></div>
+        <div class="toast" id="calendarToast" role="status" aria-live="polite"></div>
         <div class="card-actions manual-workout-toggle">
           <button class="btn" type="button" id="openManualWorkout"><i data-lucide="plus" aria-hidden="true"></i>Handmatige sessie toevoegen</button>
         </div>
