@@ -1,4 +1,4 @@
-const CACHE_NAME = "momentum-v2.11.1";
+const CACHE_NAME = "momentum-v2.12.0";
 const APP_SHELL = [
   "./",
   "./index.html",
