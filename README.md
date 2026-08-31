@@ -17,3 +17,5 @@ De persoonlijke voortgang wordt in de browser op het apparaat opgeslagen. Gebrui
 De testsuite draait met [Playwright](https://playwright.dev): `npm install`, `npx playwright install chromium` en daarna `npm test`. De tests draaien ook automatisch via GitHub Actions bij elke push en pull request.
 
 Versie 2.9 voegt een nauwkeurig, grotendeels plantaardig weekmenu toe, houdt eiwit op peil bij calorieaanpassingen en volgt vezels, groente, fruit en vocht. Eigen voeding kan nu ook een gepland menu-item vervangen zonder dubbeltelling. Het trainingsplan bevat daarnaast instelbare trainingsdagen en concrete progressieregels.
+
+Sinds versie 2.12 gebruikt het trainingsprogramma uitsluitend kettlebell- (12/16/20 kg) en lichaamsgewichtoefeningen: geen fiets, roeier of machines meer nodig. De conditiemeting in week 1, 5 en 9 is een swing-test (aantal swings met 12 kg in 5 minuten) en de knie blijft leidend in elke oefening en elk alternatief.

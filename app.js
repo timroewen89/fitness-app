@@ -34,74 +34,74 @@
 
       var workouts = [
         {
-          id: "strength-a", order: 1, title: "Kracht A + fietsen", type: "Vast", duration: 45,
-          description: "Full-body kracht met de fiets als knievriendelijke basis.",
+          id: "strength-a", order: 1, title: "Kracht A \u00b7 kettlebell", type: "Vast", duration: 45,
+          description: "Full-body kracht met kettlebell en lichaamsgewicht, kniebewust opgebouwd.",
           exercises: function (week) {
             var p = trainingPlanFor(week);
             return [
-              ["Rustig fietsen", "7 min", "Zadel zo instellen dat de knie onderaan bijna gestrekt is."],
-              ["Squat naar bankje", p.sets + " × 8–12", "Lichaamsgewicht of lichte belasting, comfortabele diepte en gecontroleerd tempo."],
-              ["Chest press", p.sets + " × 8–12", "Stop met ongeveer drie herhalingen over."],
-              ["Seated row", p.sets + " × 10–12", "Schouderbladen rustig naar achteren."],
-              ["Hip thrust", p.sets + " × 10–15", "Span de bilspieren bovenaan aan."],
-              ["Hamstring curl", p.sets + " × 10–15", "Rustig terug laten zakken."],
-              ["Staande kuitheffing", p.sets + " × 12–15", "Houd lichte steun vast en beweeg langzaam door de volledige comfortabele uitslag."],
-              ["Plank", p.sets + " × 20–35 sec", "Kies knieën of tenen."],
-              ["Rustig uitfietsen", "5–8 min", "Ademhaling terug naar rustig tempo."]
+              ["Warming-up", "5 min", "Marcheer op de plaats, maak armzwaaien en doe rustige halo's met 12 kg."],
+              ["Kettlebell deadlift", p.sets + " \u00d7 8\u201312", "Heupscharnier: heupen naar achteren, rug lang; de knie\u00ebn buigen maar licht. Start met 16 kg."],
+              ["Opdrukken (verhoogd of op de vloer)", p.sets + " \u00d7 8\u201312", "Kies de hoogte zo dat je acht nette herhalingen haalt; stop met drie herhalingen reserve."],
+              ["Eenarmige kettlebell row", p.sets + " \u00d7 10\u201312 per kant", "Steun met \u00e9\u00e9n hand op een bankje, rug recht; trek de kettlebell naar je heup."],
+              ["Glute bridge met kettlebell", p.sets + " \u00d7 10\u201315", "Leg de kettlebell op je heupen en span de bilspieren bovenaan aan."],
+              ["Staande kuitheffing", p.sets + " \u00d7 12\u201315", "Houd lichte steun vast en beweeg langzaam door de volledige comfortabele uitslag."],
+              ["Suitcase carry", "2 \u00d7 30\u201340 sec per kant", "Loop of sta rechtop met 16\u201320 kg in \u00e9\u00e9n hand; niet opzij hangen."],
+              ["Plank", p.sets + " \u00d7 20\u201335 sec", "Kies knie\u00ebn of tenen."],
+              ["Cooling-down", "5 min", "Loop rustig rond, schud armen en benen los en laat de ademhaling zakken."]
             ];
           }
         },
         {
           id: "conditioning", order: 2, title: "Conditie + circuit", type: "Vast", duration: 40,
-          description: "Intervals zonder springen, gevolgd door een beheerst circuit.",
+          description: "Kettlebell-intervallen zonder springen, gevolgd door een beheerst circuit.",
           exercises: function (week) {
             var p = trainingPlanFor(week);
             var burpee = state.coaching.mode === "recover"
               ? ["Verhoogde walk-out", "6 herhalingen", "Herstelstand: geen sprong. Handen op een hoog bankje en rustig uitstappen."]
               : (week < 3
-              ? ["Verhoogde walk-out", "6 herhalingen", "Handen op bankje. Kies als alternatief 6–10 kleine tweebenige sprongen als je knie rustig blijft."]
+              ? ["Verhoogde walk-out", "6 herhalingen", "Handen op bankje. Kies als alternatief 6\u201310 kleine tweebenige sprongen als je knie rustig blijft."]
               : (week < 5
                 ? ["Verhoogde step-back burpee", "6 herhalingen", "Handen op een hoog bankje; sluit desgewenst af met een klein gecontroleerd sprongetje."]
                 : ["Step-back burpee met klein sprongetje", "6 herhalingen", "Laag springen, stil en zacht landen; geen diepe squat of snelle draaibeweging."]));
             return [
-              ["Warming-up", "5 min", "Fiets, crosstrainer of roeier."],
-              ["Conditie-intervallen", p.cardio + " min", "2 minuten rustig, 1 minuut stevig op RPE 6."],
-              ["Circuit", p.circuit + " rondes", "Werk beheerst, rust 60–90 seconden per ronde."],
-              ["Incline push-up", "8–12", "Handen op een bankje."],
+              ["Warming-up", "5 min", "Marcheren op de plaats en rustige swings met 12 kg."],
+              ["Kettlebell-conditie", p.cardio + " min", "Intervallen: 30 seconden swings met 12 kg, dan 60\u201390 seconden rustig marcheren; RPE 6."],
+              ["Circuit", p.circuit + " rondes", "Werk beheerst, rust 60\u201390 seconden per ronde."],
+              ["Incline push-up", "8\u201312", "Handen op een bankje."],
               ["Box squat", "10", "Lichaamsgewicht, comfortabele bewegingsuitslag en geen zware squatbelasting."],
               burpee,
               ["Glute bridge", "12", "Voeten stevig op de vloer."],
-              ["Plank", "20–30 sec", "Blijf rustig ademen."],
-              ["Cooling-down", "5 min", "Rustig bewegen."]
+              ["Plank", "20\u201330 sec", "Blijf rustig ademen."],
+              ["Cooling-down", "5 min", "Rustig nawandelen en de ademhaling laten zakken."]
             ];
           }
         },
         {
-          id: "strength-b", order: 3, title: "Kracht B + roeien", type: "Vast", duration: 50,
+          id: "strength-b", order: 3, title: "Kracht B \u00b7 kettlebell & romp", type: "Vast", duration: 50,
           description: "Rug, heupen, benen en romp met gecontroleerde kniebelasting.",
           exercises: function (week) {
             var p = trainingPlanFor(week);
             return [
-              ["Rustig roeien", "7 min", "Maak de kniehoek niet dieper dan prettig voelt."],
-              ["Cable pull-through", p.sets + " × 10–12", "Beweeg vanuit de heupen, rug neutraal."],
-              ["Lat pulldown", p.sets + " × 8–12", "Trek richting borst, niet achter de nek."],
-              ["Incline chest press", p.sets + " × 8–12", "Gecontroleerd uitstoten en terug."],
-              ["Leg press", p.sets + " × 10–12", "Pijnvrije diepte, knieën volgen de voeten."],
-              ["Balans met lichte steun", "2 × 20–30 sec per been", "Sta naast een rek, houd zo nodig één hand vast en houd de knie licht gebogen."],
-              ["Cable row", p.sets + " × 10–12", "Borst rustig rechtop."],
-              ["Dead bug", p.sets + " × 8 per kant", "Onderrug licht tegen de vloer."],
-              ["Crosstrainer of roeier", "5–8 min", "Rustig afronden."]
+              ["Warming-up", "5 min", "Rustig marcheren en lichte swings; maak de kniehoek niet dieper dan prettig voelt."],
+              ["Kettlebell swing", p.sets + " \u00d7 10\u201315", "De kracht komt uit de heupen (scharnier), niet uit de knie\u00ebn. Start met 12 kg."],
+              ["Voorovergebogen kettlebell row", p.sets + " \u00d7 8\u201312", "Twee handen aan \u00e9\u00e9n kettlebell, rug lang en romp stil."],
+              ["Vloer-drukken met kettlebell", p.sets + " \u00d7 8\u201312", "Lig op je rug en druk de kettlebell gecontroleerd omhoog; wissel per set van arm."],
+              ["Goblet box squat", p.sets + " \u00d7 10\u201312", "Houd 12 kg tegen de borst en zak naar het bankje; pijnvrije diepte, knie\u00ebn volgen de voeten."],
+              ["Balans met lichte steun", "2 \u00d7 20\u201330 sec per been", "Sta naast een stoel of muur, houd zo nodig \u00e9\u00e9n hand vast en houd de knie licht gebogen."],
+              ["Kettlebell halo", p.sets + " \u00d7 8 per richting", "Cirkel 12 kg rustig rond je hoofd; ellebogen dicht bij het lichaam."],
+              ["Dead bug", p.sets + " \u00d7 8 per kant", "Onderrug licht tegen de vloer."],
+              ["Cooling-down", "5 min", "Rustig afronden met lichte heup- en schoudermobiliteit."]
             ];
           }
         },
         {
-          id: "optional-cardio", order: 4, title: "Rustige duurtraining", type: "Optioneel", duration: 50,
-          description: "Extra conditie op praattempo; overslaan als herstel achterblijft.",
+          id: "optional-cardio", order: 4, title: "Rustige beweegdag", type: "Optioneel", duration: 50,
+          description: "Wandeling op praattempo plus mobiliteit; overslaan als herstel achterblijft.",
           exercises: function (week) {
             var p = trainingPlanFor(week);
             return [
               ["Warming-up", "5 min", "Zeer rustig beginnen."],
-              ["Fiets of crosstrainer", Math.max(30, p.cardio + 10) + " min", "RPE 4–5: je kunt blijven praten."],
+              ["Wandelen in rustig tempo", Math.max(30, p.cardio + 10) + " min", "RPE 4\u20135: je kunt blijven praten. Kies vlak terrein als de knie gevoelig is."],
               ["Mobiliteit", "5 min", "Rustige heup-, kuit- en bovenbeenbewegingen."]
             ];
           }
@@ -109,24 +109,25 @@
       ];
 
       var exerciseAlternatives = {
-        "Rustig fietsen": ["Crosstrainer rustig", "Roeien met korte haal"],
-        "Squat naar bankje": ["Leg press met kleine bewegingsuitslag", "Sit-to-stand vanaf hogere bank"],
-        "Chest press": ["Incline push-up tegen bank", "Machine press met neutrale greep"],
-        "Seated row": ["Cable row", "Chest-supported row"],
-        "Hip thrust": ["Glute bridge", "Cable pull-through"],
-        "Hamstring curl": ["Glute bridge walk-out", "Lichte Romanian deadlift"],
-        "Staande kuitheffing": ["Zittende kuitheffing", "Kuitheffing met twee handen aan een rek"],
+        "Kettlebell deadlift": ["Glute bridge met kettlebell", "Romanian deadlift met 12 kg"],
+        "Opdrukken (verhoogd of op de vloer)": ["Opdrukken op knie\u00ebn", "Incline push-up tegen bank"],
+        "Eenarmige kettlebell row": ["Voorovergebogen kettlebell row", "Row in stahouding met 12 kg"],
+        "Glute bridge met kettlebell": ["Glute bridge", "Glute bridge walk-out"],
+        "Staande kuitheffing": ["Zittende kuitheffing", "Kuitheffing met steun van een muur"],
+        "Suitcase carry": ["Farmer carry met twee kettlebells", "Suitcase hold op de plaats"],
         "Balans met lichte steun": ["Tandemstand met steun", "Gewichtsverplaatsing links-rechts"],
-        "Plank": ["Plank op knieën", "Dead bug"],
-        "Conditie-intervallen": ["Fietsintervallen", "Crosstrainerintervallen", "Roeien met beperkte kniehoek"],
-        "Box squat": ["Sit-to-stand vanaf hoge bank", "Leg press met kleine bewegingsuitslag"],
+        "Plank": ["Plank op knie\u00ebn", "Dead bug"],
+        "Kettlebell-conditie": ["Marcheer-intervallen zonder gewicht", "Shadowboks-intervallen"],
+        "Box squat": ["Sit-to-stand vanaf hoge bank", "Box squat naar hogere zitting"],
         "Verhoogde walk-out": ["Kleine tweebenige sprongen", "Incline mountain climber zonder tempo", "Dead bug"],
         "Verhoogde step-back burpee": ["Step-back burpee met klein sprongetje", "Verhoogde walk-out", "Kleine tweebenige sprongen"],
         "Step-back burpee met klein sprongetje": ["Verhoogde step-back burpee zonder sprong", "Kleine tweebenige sprongen", "Verhoogde walk-out"],
-        "Cable pull-through": ["Hip thrust", "Lichte Romanian deadlift"],
-        "Leg press": ["Squat naar hoge bank", "Sit-to-stand"],
-        "Crosstrainer of roeier": ["Rustig fietsen", "Wandelen op vlakke band zonder helling"],
-        "Fiets of crosstrainer": ["Roeien met beperkte kniehoek", "Rustig wandelen op vlakke band"]
+        "Kettlebell swing": ["Kettlebell deadlift in vlot tempo", "Glute bridge walk-out"],
+        "Voorovergebogen kettlebell row": ["Eenarmige kettlebell row", "Row in stahouding met 12 kg"],
+        "Vloer-drukken met kettlebell": ["Opdrukken (verhoogd of op de vloer)", "Opdrukken op knie\u00ebn"],
+        "Goblet box squat": ["Box squat", "Sit-to-stand vanaf hoge bank"],
+        "Kettlebell halo": ["Halo zittend met 12 kg", "Schouderrondjes zonder gewicht"],
+        "Wandelen in rustig tempo": ["Marcheren op de plaats", "Rustige swing-blokjes van 20 seconden"]
       };
 
       var mealDays = [
@@ -787,8 +788,8 @@
         return rising ? points : null;
       }
 
-      /* Conditiemeting in week 1, 5 en 9: afstand van de eerste 10 minuten op
-         hetzelfde apparaat, met dezelfde weerstand en RPE. */
+      /* Conditiemeting in week 1, 5 en 9: het totaal aantal swings met 12 kg in
+         5 minuten (rust wanneer nodig, stop een blokje eerder bij vormverlies). */
       var FITNESS_TEST_WEEKS = [1, 5, 9];
 
       function fitnessTestKey(cycle, week) {
@@ -815,22 +816,22 @@
               var earlier = tests.filter(function (t) { return t.cycle * 12 + t.week < test.cycle * 12 + test.week; });
               var previous = earlier.length ? earlier[earlier.length - 1] : null;
               var delta = previous ? test.distance - previous.distance : null;
-              var deltaText = delta === null ? "eerste meting" : (delta >= 0 ? "+" : "") + delta + " m t.o.v. vorige";
-              return "<li class=\"history-item\"><div class=\"item-main\"><strong>Cyclus " + test.cycle + " \u00b7 week " + test.week + "</strong><span class=\"text-small text-muted\">" + formatDate(test.day) + " \u00b7 " + deltaText + "</span></div><span class=\"item-value\">" + test.distance + " m</span></li>";
+              var deltaText = delta === null ? "eerste meting" : (delta >= 0 ? "+" : "") + delta + " swings t.o.v. vorige";
+              return "<li class=\"history-item\"><div class=\"item-main\"><strong>Cyclus " + test.cycle + " \u00b7 week " + test.week + "</strong><span class=\"text-small text-muted\">" + formatDate(test.day) + " \u00b7 " + deltaText + "</span></div><span class=\"item-value\">" + test.distance + " swings</span></li>";
             }).join("") + "</ul>"
           : "<p class=\"empty-state\">Nog geen metingen. De eerste meting hoort bij week 1.</p>";
         var nextWeek = FITNESS_TEST_WEEKS.filter(function (value) { return value > week; })[0];
         var form = isTestWeek
-          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Afstand na 10 minuten (meters)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"200\" max=\"20000\" step=\"10\" inputmode=\"numeric\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\" data-cycle=\"" + cycle + "\" data-week=\"" + week + "\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
+          ? "<div class=\"form-grid\"><label class=\"form-field\"><span class=\"form-label\">Aantal swings in 5 minuten (12 kg)</span><input class=\"form-control\" id=\"fitnessTestDistance\" type=\"number\" min=\"10\" max=\"500\" step=\"1\" inputmode=\"numeric\" value=\"" + (current ? current.distance : "") + "\"></label></div><div class=\"card-actions\"><button class=\"btn btn-primary\" type=\"button\" id=\"saveFitnessTest\" data-cycle=\"" + cycle + "\" data-week=\"" + week + "\">" + (current ? "Meting bijwerken" : "Meting opslaan") + "</button></div>"
           : "<p class=\"text-small text-muted\">Volgende meting in week " + (nextWeek || "1 van de volgende cyclus") + ".</p>";
-        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op hetzelfde apparaat, met dezelfde weerstand en RPE.</p>" + form + history + "";
+        host.innerHTML = "<h3>Conditiemeting</h3><p class=\"text-small text-muted\">Tel in week 1, 5 en 9 hoeveel swings (12 kg) je in 5 minuten haalt. Rust wanneer nodig en stop een blokje eerder als de vorm wegzakt.</p>" + form + history + "";
       }
 
       function saveFitnessTest() {
         var input = root.querySelector("#fitnessTestDistance");
         var distance = Math.round(safeNumber(input && input.value, 0));
-        if (distance < 200 || distance > 20000) {
-          showToast("fitnessTestToast", "Vul een afstand tussen 200 en 20.000 meter in.", true);
+        if (distance < 10 || distance > 500) {
+          showToast("fitnessTestToast", "Vul een aantal swings tussen 10 en 500 in.", true);
           return;
         }
         var button = root.querySelector("#saveFitnessTest");
@@ -977,7 +978,7 @@
         var options = Object.keys(trainingSchedules).map(function (key) {
           return "<option value=\"" + key + "\"" + (key === selectedKey ? " selected" : "") + ">" + escapeHtml(trainingSchedules[key].label) + "</option>";
         }).join("");
-        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: noteer in week 1, 5 en 9 de afstand van de eerste 10 minuten op dezelfde fiets of crosstrainer, met dezelfde weerstand en RPE.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div></article>";
+        root.querySelector("#trainingGuidance").innerHTML = "<article class=\"card\"><h3>Jouw weekindeling</h3><label class=\"form-field\"><span class=\"form-label\">Vaste trainingsdagen</span><select class=\"form-select\" id=\"trainingScheduleSelect\">" + options + "</select></label><ul class=\"quick-list\"><li class=\"quick-item\"><span>" + schedule.days[0] + "</span><strong>Kracht A</strong></li><li class=\"quick-item\"><span>" + schedule.days[1] + "</span><strong>Conditie + circuit</strong></li><li class=\"quick-item\"><span>" + schedule.days[2] + "</span><strong>Kracht B</strong></li><li class=\"quick-item\"><span>Optioneel: " + schedule.optional + "</span><strong>Rustige duurtraining</strong></li></ul></article><article class=\"card\"><h3>Wanneer opbouwen?</h3><ol class=\"text-small\"><li>Haal eerst alle sets aan de bovenkant van de herhalingsrange met RPE 7 of lager.</li><li>Alleen opbouwen als de knie tijdens de training maximaal 3/10 blijft en de volgende ochtend terug is op het oude niveau.</li><li>Verhoog daarna één ding: het kleinste gewichtsstapje óf 1–2 herhalingen; bij cardio maximaal 2–3 minuten per week.</li><li>Bij nieuwe zwelling, instabiliteit, blokkeren of pijn boven 4/10: stop de sprongen en verlaag de omvang.</li></ol><p class=\"callout text-small\">Conditiemeting: tel in week 1, 5 en 9 hoeveel swings (12 kg) je in 5 minuten haalt \u2014 zelfde kettlebell, zelfde rustregels.</p><div class=\"card-actions\"><button class=\"btn\" type=\"button\" id=\"exportCalendar\"><i data-lucide=\"calendar\" aria-hidden=\"true\"></i>Zet trainingsdagen in je agenda</button></div></article>";
       }
 
       function latestWorkoutRecord(workoutId) {
@@ -1052,37 +1053,34 @@
          aandachtspunten. "zoek" stuurt de YouTube-zoekopdracht; zoeklinks blijven
          werken, in tegenstelling tot vaste video-ID's. */
       var exerciseGuides = {
-        "Squat naar bankje": { zoek: "box squat techniek", stappen: ["Ga voor een bankje staan, voeten op heupbreedte en tenen licht naar buiten.", "Zak rustig naar achteren alsof je gaat zitten; knieën volgen de richting van de tenen.", "Raak het bankje licht aan (niet ploffen) en kom via je hakken weer omhoog.", "Houd je borst rechtop en je gewicht over de hele voet verdeeld."], let_op: "Ga niet dieper dan pijnvrij kan; het bankje bepaalt je veilige diepte." },
-        "Box squat": { zoek: "box squat lichaamsgewicht techniek", stappen: ["Zelfde beweging als de squat naar bankje: zak gecontroleerd tot je het bankje raakt.", "Pauzeer heel kort zonder door te zakken en sta krachtig op.", "Adem in bij het zakken, uit bij het opstaan."], let_op: "Kies de hoogte van het bankje zo dat je knie prettig blijft." },
-        "Chest press": { zoek: "chest press machine techniek", stappen: ["Stel de stoel zo af dat de handvatten op borsthoogte zitten.", "Duw de handvatten rustig uit tot je armen bijna gestrekt zijn.", "Laat gecontroleerd terugkomen tot een lichte rek op de borst.", "Houd schouders laag en polsen recht."], let_op: "Stop elke set met ongeveer drie herhalingen reserve." },
-        "Incline chest press": { zoek: "incline chest press techniek", stappen: ["Stel de rugleuning schuin omhoog in; handvatten starten net onder schouderhoogte.", "Duw schuin omhoog uit zonder de onderrug hol te trekken.", "Laat rustig terugzakken tot een comfortabele rek."], let_op: "Voeten blijven plat op de vloer; geen druk op de knieën." },
-        "Incline push-up": { zoek: "incline push up techniek", stappen: ["Zet je handen iets breder dan schouderbreedte op een bankje of verhoging.", "Maak je lichaam één rechte lijn van hoofd tot hielen.", "Zak met de borst richting het bankje en duw jezelf rustig terug omhoog.", "Hoe hoger de steun, hoe lichter de oefening."], let_op: "Span buik en billen aan zodat je heupen niet doorzakken." },
-        "Seated row": { zoek: "seated cable row techniek", stappen: ["Ga rechtop zitten met licht gebogen knieën en pak het handvat.", "Trek het handvat naar je buik terwijl je schouderbladen rustig naar achteren zakken.", "Laat de armen gecontroleerd weer strekken zonder met de rug mee te bewegen."], let_op: "Trek vanuit je rug, niet vanuit je nek of onderrug." },
-        "Cable row": { zoek: "seated cable row techniek", stappen: ["Zit rechtop, borst licht gestrekt en schouders laag.", "Trek het handvat richting je navel en knijp de schouderbladen samen.", "Beweeg langzaam terug en houd spanning op de kabel."], let_op: "Houd de romp stil; alleen de armen en schouderbladen bewegen." },
-        "Lat pulldown": { zoek: "lat pulldown techniek", stappen: ["Pak de stang iets breder dan schouderbreedte en zet je bovenbenen onder de steun.", "Trek de stang rustig richting je borstbeen, ellebogen schuin naar beneden.", "Laat de stang gecontroleerd terug omhoog komen tot gestrekte armen."], let_op: "Trek de stang nooit achter je nek langs." },
-        "Hip thrust": { zoek: "hip thrust techniek", stappen: ["Leun met je schouderbladen op een bank, voeten plat op de vloer op heupbreedte.", "Duw je heupen omhoog tot je lichaam van knieën tot schouders één lijn vormt.", "Knijp bovenaan één tel je bilspieren aan en zak rustig terug.", "Kin licht ingetrokken, blik schuin naar voren."], let_op: "Duw vanuit je hakken; de schenen staan bovenaan verticaal." },
-        "Glute bridge": { zoek: "glute bridge techniek", stappen: ["Lig op je rug met gebogen knieën en voeten plat op de vloer.", "Duw je heupen omhoog vanuit je hakken tot een rechte lijn van knie tot schouder.", "Houd bovenaan kort vast en zak langzaam weer terug."], let_op: "Duw niet verder omhoog dan je onderrug prettig vindt." },
-        "Hamstring curl": { zoek: "hamstring curl machine techniek", stappen: ["Stel de machine zo af dat je knie op één lijn ligt met het draaipunt.", "Buig de knieën rustig zo ver als comfortabel is.", "Laat het gewicht traag en gecontroleerd terugkomen — dat is het belangrijkste deel."], let_op: "Geen zwaai of snelheid; de knie bepaalt de uitslag." },
-        "Leg press": { zoek: "leg press techniek knieveilig", stappen: ["Plaats je voeten op heupbreedte midden op het platform.", "Laat het gewicht rustig zakken tot een pijnvrije kniehoek.", "Duw terug omhoog zonder de knieën op slot te gooien.", "Knieën volgen steeds de richting van de tenen."], let_op: "Diepte is ondergeschikt aan controle: kies de uitslag die je knie toelaat." },
-        "Staande kuitheffing": { zoek: "staande kuitheffing calf raise techniek", stappen: ["Sta rechtop met lichte steun aan een rek of muur.", "Duw je rustig omhoog op je tenen en houd bovenaan één tel vast.", "Zak langzaam door de volledige comfortabele uitslag terug."], let_op: "Langzaam zakken traint de kuit het meest; geen verende beweging." },
-        "Plank": { zoek: "plank techniek beginners", stappen: ["Steun op onderarmen en knieën of tenen; ellebogen onder de schouders.", "Maak één rechte lijn en span buik en billen licht aan.", "Blijf rustig doorademen tot de tijd om is."], let_op: "Zakt je heup door of ga je hangen? Kies dan de variant op de knieën." },
-        "Dead bug": { zoek: "dead bug oefening techniek", stappen: ["Lig op je rug met armen omhoog en knieën boven de heupen.", "Strek langzaam één arm en het tegenovergestelde been richting de vloer.", "Houd je onderrug licht tegen de vloer gedrukt en wissel van kant."], let_op: "Komt je onderrug los? Maak de beweging kleiner." },
-        "Balans met lichte steun": { zoek: "balansoefening één been fysio", stappen: ["Sta naast een rek of stoel en houd zo nodig één hand licht vast.", "Til één voet iets van de vloer en houd de standknie licht gebogen.", "Houd je heupen recht en je blik op een vast punt."], let_op: "Bouw af van hand vasthouden naar één vinger naar los." },
-        "Verhoogde walk-out": { zoek: "walk out oefening techniek", stappen: ["Zet je handen op een hoog bankje en loop met je handen stap voor stap naar voren.", "Eindig in een schuine plankpositie en loop rustig weer terug.", "Houd je buik aangespannen zodat je rug niet doorzakt."], let_op: "Herstelstand: geen sprong en geen tempo — controle staat voorop." },
-        "Verhoogde step-back burpee": { zoek: "burpee step back techniek", stappen: ["Zet je handen op een hoog bankje en stap één voor één naar achteren tot een schuine plank.", "Stap weer in en kom rechtop.", "Sluit desgewenst af met een klein, zacht sprongetje."], let_op: "Stil en zacht landen; geen diepe squat of snelle draai." },
-        "Verhoogde step-back burpee zonder sprong": { zoek: "burpee step back zonder sprong", stappen: ["Handen op een hoog bankje, stap één voor één terug tot een schuine plank.", "Stap rustig weer in en sta volledig op zonder sprong."], let_op: "Deze variant is bewust sprongvrij: houd het tempo laag." },
-        "Step-back burpee met klein sprongetje": { zoek: "burpee step back techniek", stappen: ["Stap vanuit stand één voor één terug tot een plankpositie.", "Stap weer in en sluit af met een klein, laag sprongetje.", "Land zacht en stil met licht gebogen knieën."], let_op: "Geen diepe squat of snelle draaibeweging na de landing." },
-        "Kleine tweebenige sprongen": { zoek: "pogo hops kleine sprongen techniek", stappen: ["Spring laag en ritmisch met beide voeten tegelijk.", "Land zacht op de voorvoeten met licht gebogen knieën.", "Houd het contact met de grond kort maar de landing stil."], let_op: "Voelt de knie niet rustig? Sla de sprongen over en kies de walk-out." },
-        "Rustig fietsen": { zoek: "hometrainer afstellen zadelhoogte", stappen: ["Stel het zadel zo af dat je knie onderaan de slag bijna gestrekt is.", "Trap in een rustig ritme waarbij je kunt blijven praten."], let_op: "Kraakt of prikt de knie? Zet het zadel iets hoger en de weerstand lager." },
-        "Rustig uitfietsen": { zoek: "cooling down fietsen", stappen: ["Verlaag de weerstand en het tempo geleidelijk.", "Fiets door tot je ademhaling weer rustig is."], let_op: "Uitfietsen helpt de knie rustig af te koelen na belasting." },
-        "Rustig roeien": { zoek: "roeiergometer techniek beginners", stappen: ["Begin de haal vanuit de benen, dan romp, dan armen.", "Maak de kniehoek niet dieper dan prettig voelt.", "Keer in omgekeerde volgorde rustig terug."], let_op: "Beperk de insteek (kniebuiging) zolang de knie gevoelig is." },
-        "Conditie-intervallen": { zoek: "interval training cardio beginners", stappen: ["Wissel 2 minuten rustig tempo af met 1 minuut stevig (RPE 6).", "Houd de cadans hoog en de weerstand gematigd.", "Bouw de laatste minuten rustig af."], let_op: "Stevig mag voelen als werken, maar praten in korte zinnen moet lukken." },
-        "Fiets of crosstrainer": { zoek: "duurtraining zone 2 uitleg", stappen: ["Kies een tempo waarbij je moeiteloos kunt blijven praten (RPE 4–5).", "Houd het tempo gelijkmatig; weerstand laag tot gemiddeld."], let_op: "Duurtraining hoort licht te voelen — sneller is hier niet beter." },
-        "Warming-up": { zoek: "warming up cardio apparaat", stappen: ["Begin zeer rustig en verhoog het tempo geleidelijk over 5 minuten.", "Eindig op een tempo waarop je licht begint te zweten."], let_op: "Een warme knie beweegt soepeler: sla dit nooit over." },
-        "Cooling-down": { zoek: "cooling down na krachttraining", stappen: ["Beweeg 5 minuten rustig door op laag tempo.", "Adem bewust rustig uit en laat de hartslag zakken."], let_op: "" },
+        "Kettlebell deadlift": { zoek: "kettlebell deadlift techniek", stappen: ["Zet de kettlebell tussen je voeten, voeten op heupbreedte.", "Duw je heupen naar achteren en houd je rug lang; pak het handvat met twee handen.", "Sta op door de heupen naar voren te duwen; de knie\u00ebn buigen maar licht.", "Zet de kettlebell gecontroleerd terug via dezelfde weg."], let_op: "Dit is een heupbeweging, geen squat: hoe minder kniebuiging, hoe knievriendelijker. Bouw op van 16 naar 20 kg." },
+        "Kettlebell swing": { zoek: "kettlebell swing techniek beginners", stappen: ["Start als de deadlift: heupen naar achteren, rug lang.", "Zwiep de kettlebell met een krachtige heupstrekking tot borsthoogte; de armen sturen alleen.", "Laat hem tussen de bovenbenen terugzwaaien en vang de beweging op met de heupen, niet met de knie\u00ebn.", "Houd de romp aangespannen en de hakken op de vloer."], let_op: "Voelt de knie de landing? Maak de zwaai kleiner of wissel naar deadlifts in vlot tempo. Start met 12 kg." },
+        "Goblet box squat": { zoek: "goblet box squat techniek", stappen: ["Houd de kettlebell (12 kg) met twee handen tegen je borst.", "Zak rustig naar achteren tot je het bankje licht raakt; knie\u00ebn volgen de tenen.", "Sta op via je hakken zonder voorover te vallen."], let_op: "Het bankje bepaalt je veilige diepte; ga niet dieper dan pijnvrij kan." },
+        "Eenarmige kettlebell row": { zoek: "one arm kettlebell row techniek", stappen: ["Steun met \u00e9\u00e9n hand en knie op een bankje; andere voet stevig op de vloer.", "Trek de kettlebell naar je heup terwijl je schouderblad naar achteren zakt.", "Laat hem langzaam zakken tot een lichte rek; houd de romp stil."], let_op: "Trek vanuit de rug, niet vanuit de nek; niet met de romp meedraaien." },
+        "Voorovergebogen kettlebell row": { zoek: "bent over kettlebell row twee handen", stappen: ["Kantel met een lange rug voorover vanuit de heupen, knie\u00ebn licht gebogen.", "Pak de kettlebell met twee handen en trek hem naar je onderbuik.", "Zak langzaam terug en houd de rug de hele set lang."], let_op: "Voel je dit in je onderrug? Kantel minder ver voorover of kies de eenarmige variant met steun." },
+        "Vloer-drukken met kettlebell": { zoek: "kettlebell floor press techniek", stappen: ["Lig op je rug met gebogen knie\u00ebn; houd de kettlebell met de bal aan de buitenkant van je pols.", "Druk hem gecontroleerd omhoog tot je arm bijna gestrekt is.", "Laat je bovenarm zacht op de vloer terugkomen en druk opnieuw; wissel per set van arm."], let_op: "De vloer beschermt je schouder \u2014 laat de elleboog nooit hard neerkomen." },
+        "Glute bridge met kettlebell": { zoek: "glute bridge kettlebell techniek", stappen: ["Lig op je rug met gebogen knie\u00ebn en leg de kettlebell (met handdoek) op je heupen.", "Duw je heupen omhoog vanuit je hakken tot een rechte lijn van knie tot schouder.", "Knijp bovenaan \u00e9\u00e9n tel de bilspieren aan en zak langzaam terug."], let_op: "Duw niet verder omhoog dan je onderrug prettig vindt." },
+        "Glute bridge": { zoek: "glute bridge techniek", stappen: ["Lig op je rug met gebogen knie\u00ebn en voeten plat op de vloer.", "Duw je heupen omhoog vanuit je hakken tot een rechte lijn van knie tot schouder.", "Houd bovenaan kort vast en zak langzaam weer terug."], let_op: "Duw niet verder omhoog dan je onderrug prettig vindt." },
+        "Suitcase carry": { zoek: "suitcase carry techniek", stappen: ["Til \u00e9\u00e9n kettlebell (16\u201320 kg) op zoals een koffer en sta rechtop.", "Loop rustig rechte lijntjes of blijf staan; schouders laag en gelijk.", "Wissel na de tijd van hand."], let_op: "Niet opzij hangen: je buikspieren houden je recht \u2014 dat is precies de oefening." },
+        "Kettlebell halo": { zoek: "kettlebell halo techniek", stappen: ["Houd de kettlebell (12 kg) ondersteboven bij de hoorns voor je borst.", "Cirkel hem rustig en dichtbij rond je hoofd; ellebogen wijzen omlaag.", "Wissel na de herhalingen van richting."], let_op: "Klein en rustig cirkelen; de romp blijft stil." },
+        "Opdrukken (verhoogd of op de vloer)": { zoek: "push up progressie techniek", stappen: ["Zet je handen iets breder dan schouderbreedte op een verhoging of de vloer.", "Maak \u00e9\u00e9n rechte lijn van hoofd tot hielen en span buik en billen aan.", "Zak met de borst richting steun en druk jezelf rustig terug omhoog.", "Hoe hoger de steun, hoe lichter; op de vloer is het zwaarst."], let_op: "Zakt je heup door? Kies een hogere steun of de variant op de knie\u00ebn." },
+        "Incline push-up": { zoek: "incline push up techniek", stappen: ["Zet je handen iets breder dan schouderbreedte op een bankje.", "Maak je lichaam \u00e9\u00e9n rechte lijn van hoofd tot hielen.", "Zak met de borst richting het bankje en duw jezelf rustig terug omhoog."], let_op: "Span buik en billen aan zodat je heupen niet doorzakken." },
+        "Box squat": { zoek: "box squat lichaamsgewicht techniek", stappen: ["Ga voor een bankje staan, voeten op heupbreedte en tenen licht naar buiten.", "Zak gecontroleerd naar achteren tot je het bankje licht raakt (niet ploffen).", "Sta krachtig op via je hakken; adem in bij het zakken, uit bij het opstaan."], let_op: "Kies de hoogte van het bankje zo dat je knie prettig blijft." },
+        "Staande kuitheffing": { zoek: "staande kuitheffing calf raise techniek", stappen: ["Sta rechtop met lichte steun aan een muur of stoel.", "Duw je rustig omhoog op je tenen en houd bovenaan \u00e9\u00e9n tel vast.", "Zak langzaam door de volledige comfortabele uitslag terug."], let_op: "Langzaam zakken traint de kuit het meest; geen verende beweging." },
+        "Plank": { zoek: "plank techniek beginners", stappen: ["Steun op onderarmen en knie\u00ebn of tenen; ellebogen onder de schouders.", "Maak \u00e9\u00e9n rechte lijn en span buik en billen licht aan.", "Blijf rustig doorademen tot de tijd om is."], let_op: "Zakt je heup door of ga je hangen? Kies dan de variant op de knie\u00ebn." },
+        "Dead bug": { zoek: "dead bug oefening techniek", stappen: ["Lig op je rug met armen omhoog en knie\u00ebn boven de heupen.", "Strek langzaam \u00e9\u00e9n arm en het tegenovergestelde been richting de vloer.", "Houd je onderrug licht tegen de vloer gedrukt en wissel van kant."], let_op: "Komt je onderrug los? Maak de beweging kleiner." },
+        "Balans met lichte steun": { zoek: "balansoefening \u00e9\u00e9n been fysio", stappen: ["Sta naast een stoel of muur en houd zo nodig \u00e9\u00e9n hand licht vast.", "Til \u00e9\u00e9n voet iets van de vloer en houd de standknie licht gebogen.", "Houd je heupen recht en je blik op een vast punt."], let_op: "Bouw af van hand vasthouden naar \u00e9\u00e9n vinger naar los." },
+        "Verhoogde walk-out": { zoek: "walk out oefening techniek", stappen: ["Zet je handen op een hoog bankje en loop met je handen stap voor stap naar voren.", "Eindig in een schuine plankpositie en loop rustig weer terug.", "Houd je buik aangespannen zodat je rug niet doorzakt."], let_op: "Herstelstand: geen sprong en geen tempo \u2014 controle staat voorop." },
+        "Verhoogde step-back burpee": { zoek: "burpee step back techniek", stappen: ["Zet je handen op een hoog bankje en stap \u00e9\u00e9n voor \u00e9\u00e9n naar achteren tot een schuine plank.", "Stap weer in en kom rechtop.", "Sluit desgewenst af met een klein, zacht sprongetje."], let_op: "Stil en zacht landen; geen diepe squat of snelle draai." },
+        "Verhoogde step-back burpee zonder sprong": { zoek: "burpee step back zonder sprong", stappen: ["Handen op een hoog bankje, stap \u00e9\u00e9n voor \u00e9\u00e9n terug tot een schuine plank.", "Stap rustig weer in en sta volledig op zonder sprong."], let_op: "Deze variant is bewust sprongvrij: houd het tempo laag." },
+        "Step-back burpee met klein sprongetje": { zoek: "burpee step back techniek", stappen: ["Stap vanuit stand \u00e9\u00e9n voor \u00e9\u00e9n terug tot een plankpositie.", "Stap weer in en sluit af met een klein, laag sprongetje.", "Land zacht en stil met licht gebogen knie\u00ebn."], let_op: "Geen diepe squat of snelle draaibeweging na de landing." },
+        "Kleine tweebenige sprongen": { zoek: "pogo hops kleine sprongen techniek", stappen: ["Spring laag en ritmisch met beide voeten tegelijk.", "Land zacht op de voorvoeten met licht gebogen knie\u00ebn.", "Houd het contact met de grond kort maar de landing stil."], let_op: "Voelt de knie niet rustig? Sla de sprongen over en kies de walk-out." },
+        "Kettlebell-conditie": { zoek: "kettlebell swing intervallen conditie", stappen: ["Wissel 30 seconden swings met 12 kg af met 60\u201390 seconden rustig marcheren.", "Houd de swings technisch: stop een blokje eerder als de vorm wegzakt.", "Richt op RPE 6: stevig, maar praten in korte zinnen moet lukken."], let_op: "De heupen doen het werk; wordt de knie of onderrug gevoelig, verleng dan de marcheerblokken." },
+        "Wandelen in rustig tempo": { zoek: "zone 2 wandelen duurtraining", stappen: ["Kies een tempo waarbij je moeiteloos kunt blijven praten (RPE 4\u20135).", "Houd het tempo gelijkmatig en kies vlak terrein."], let_op: "Duurwerk hoort licht te voelen \u2014 sneller is hier niet beter." },
+        "Warming-up": { zoek: "warming up thuis zonder apparaat", stappen: ["Marcheer 2\u20133 minuten op de plaats en maak ruime armzwaaien.", "Sluit af met rustige halo's of lichte swings met 12 kg tot je licht begint te zweten."], let_op: "Een warme knie beweegt soepeler: sla dit nooit over." },
+        "Cooling-down": { zoek: "cooling down na krachttraining", stappen: ["Beweeg 5 minuten rustig door: nawandelen en losschudden.", "Adem bewust rustig uit en laat de hartslag zakken."], let_op: "" },
         "Mobiliteit": { zoek: "mobiliteit heup kuit oefeningen", stappen: ["Doe rustige heupcirkels, kuitrek en bovenbeenzwaaien.", "Beweeg door de pijnvrije uitslag, zonder te veren."], let_op: "Mobiliteit is bedoeld als onderhoud, niet als rek-record." },
-        "Crosstrainer of roeier": { zoek: "crosstrainer techniek beginners", stappen: ["Kies een lage weerstand en een rustig, vloeiend ritme.", "Rond de training geleidelijk af tot de ademhaling rustig is."], let_op: "" },
-        "Circuit": { zoek: "circuittraining uitleg beginners", stappen: ["Doe de oefeningen na elkaar in een rustig, beheerst tempo.", "Rust 60–90 seconden na elke ronde.", "Kwaliteit gaat boven snelheid: stop een ronde eerder als de vorm wegzakt."], let_op: "" }
+        "Circuit": { zoek: "circuittraining uitleg beginners", stappen: ["Doe de oefeningen na elkaar in een rustig, beheerst tempo.", "Rust 60\u201390 seconden na elke ronde.", "Kwaliteit gaat boven snelheid: stop een ronde eerder als de vorm wegzakt."], let_op: "" }
       };
 
       function exerciseGuideHtml(name) {

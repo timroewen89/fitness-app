@@ -232,10 +232,10 @@ test("oefeningen hebben uitklapbare uitvoeringsinstructies met YouTube-link", as
 test("conditiemeting: opslaan in een meetweek en terugzien in de historie", async ({ page }) => {
   await page.click('[data-nav="training"]');
   // Vers profiel start vandaag → week 1 is een meetweek
-  await page.fill("#fitnessTestDistance", "2400");
+  await page.fill("#fitnessTestDistance", "180");
   await page.click("#saveFitnessTest");
   await expect(page.locator("#fitnessTestToast")).toContainText("opgeslagen");
-  await expect(page.locator("#fitnessTestCard .history-item").first()).toContainText("2400 m");
+  await expect(page.locator("#fitnessTestCard .history-item").first()).toContainText("180 swings");
   await expect(page.locator("#fitnessTestCard .history-item").first()).toContainText("eerste meting");
 });
 
@@ -272,9 +272,9 @@ test("PR-detectie meldt een nieuw record bij zwaarder gewicht", async ({ page })
 
 test("foutmeldingen kleuren rood, niet groen", async ({ page }) => {
   await page.click('[data-nav="training"]');
-  await page.fill("#fitnessTestDistance", "50");
+  await page.fill("#fitnessTestDistance", "5");
   await page.click("#saveFitnessTest");
-  await expect(page.locator("#fitnessTestToast")).toContainText("tussen 200");
+  await expect(page.locator("#fitnessTestToast")).toContainText("tussen 10 en 500");
   const color = await page.locator("#fitnessTestToast").evaluate(el => getComputedStyle(el).color);
   // destructive-kleur (roodbruin), niet succes-groen
   expect(color).not.toBe("rgb(0, 122, 48)");
